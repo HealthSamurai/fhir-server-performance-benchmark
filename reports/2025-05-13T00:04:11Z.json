@@ -1,0 +1,1238 @@
+{
+  "crud": {
+    "average_rps": {
+      "status": "success",
+      "data": {
+        "resultType": "vector",
+        "result": [
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "scenario": "crud"
+            },
+            "value": [
+              1747097012.837,
+              "1482.628213803695"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "scenario": "crud"
+            },
+            "value": [
+              1747097012.837,
+              "3923.2038614009302"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "scenario": "crud"
+            },
+            "value": [
+              1747097012.837,
+              "3580.487355501048"
+            ]
+          }
+        ]
+      }
+    },
+    "average_crud_p99": {
+      "status": "success",
+      "data": {
+        "resultType": "vector",
+        "result": [
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.39215201060508476"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.33556169964864413"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.3517478227398305"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Location"
+            },
+            "value": [
+              1747097012.87,
+              "0.3218940906703389"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.1056745785781356"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.10595280273813547"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.40780266781576263"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.10801760206966107"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.2799544731142373"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.30276826967491527"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.2892819086659322"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.12504966351033897"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.10450664349677966"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.2875080089361015"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.27224669369813553"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.27988477449932186"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Observation"
+            },
+            "value": [
+              1747097012.87,
+              "0.3098196368540677"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.12471832310457628"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.3024126465584747"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.10753811825847454"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.3679733598503389"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.385230097779661"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Practitioner"
+            },
+            "value": [
+              1747097012.87,
+              "0.3299479411632201"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.27565614479627115"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/MedicationRequest"
+            },
+            "value": [
+              1747097012.87,
+              "0.2956304960622034"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.3338835840288136"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Organization"
+            },
+            "value": [
+              1747097012.87,
+              "0.28318428667983053"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/ExplanationOfBenefit"
+            },
+            "value": [
+              1747097012.87,
+              "0.32254787172135596"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.34458320391627173"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.12537954360694917"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "PUT",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.3447393862472881"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "DELETE",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.28031339780915243"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Encounter"
+            },
+            "value": [
+              1747097012.87,
+              "0.3654426133472875"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "GET",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.12780453336949146"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Patient"
+            },
+            "value": [
+              1747097012.87,
+              "0.3490532081376268"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "medplum",
+              "method": "POST",
+              "name": "${}/Claim"
+            },
+            "value": [
+              1747097012.87,
+              "0.3182491197294915"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.04533044558152542"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03409677405966102"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Observation"
+            },
+            "value": [
+              1747097012.87,
+              "0.041140127794406775"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03426571683372882"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03505671111338983"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.04445240609745762"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03433371727491524"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03465576540966101"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.043275972540338985"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0402394095438983"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Location"
+            },
+            "value": [
+              1747097012.87,
+              "0.03639939808966101"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Organization"
+            },
+            "value": [
+              1747097012.87,
+              "0.036401078327627116"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03412046694101695"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03891344361135592"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/MedicationRequest"
+            },
+            "value": [
+              1747097012.87,
+              "0.04110200574118642"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.034908448055084744"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Practitioner"
+            },
+            "value": [
+              1747097012.87,
+              "0.03770831092559322"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03646315627"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.033990783561694916"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03399239701050846"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0348138901479661"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/ExplanationOfBenefit"
+            },
+            "value": [
+              1747097012.87,
+              "0.04959259652101694"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0388165744279661"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Encounter"
+            },
+            "value": [
+              1747097012.87,
+              "0.04117755393779661"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03453735315067796"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.037485858706101695"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.041958861081525425"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03487086126050848"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.034198105672711865"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03968574174118643"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Patient"
+            },
+            "value": [
+              1747097012.87,
+              "0.03769369429474577"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "GET",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.03527770651186441"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "DELETE",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.050745223835932204"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.050180291755593215"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "PUT",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.05787745275847457"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "aidbox",
+              "method": "POST",
+              "name": "${}/Claim"
+            },
+            "value": [
+              1747097012.87,
+              "0.04487095026864407"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/ExplanationOfBenefit"
+            },
+            "value": [
+              1747097012.87,
+              "0.07294513710355931"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0686095059825424"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07190895147220341"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Practitioner"
+            },
+            "value": [
+              1747097012.87,
+              "0.07168596953423728"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07317279691067792"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Patient"
+            },
+            "value": [
+              1747097012.87,
+              "0.07534025801016948"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/MedicationRequest"
+            },
+            "value": [
+              1747097012.87,
+              "0.07246162797050844"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Organization"
+            },
+            "value": [
+              1747097012.87,
+              "0.0701097675486441"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Claim"
+            },
+            "value": [
+              1747097012.87,
+              "0.07154515204779661"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06547155172847456"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07267845424491526"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0724826094301695"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06670664388542373"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Location/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07129345477152535"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07105703450338985"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06967908963491524"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07262723464677964"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07258104787033903"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Encounter"
+            },
+            "value": [
+              1747097012.87,
+              "0.0731288146418644"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0742476508137288"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Location"
+            },
+            "value": [
+              1747097012.87,
+              "0.07324772176915252"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "PUT",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07313508012152538"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06646778086338982"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0689205118652542"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07126878864644066"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Patient/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06750111868627118"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Organization/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0653139985537288"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "MedicationRequest/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06740997510457626"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06613528131593222"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "POST",
+              "name": "${}/Observation"
+            },
+            "value": [
+              1747097012.87,
+              "0.07253049116186443"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "Observation/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06655596629542372"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "GET",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06793409421474575"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Claim/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07090367931762709"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Encounter/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.0729755604489831"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "ExplanationOfBenefit/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.07275228397694916"
+            ]
+          },
+          {
+            "metric": {
+              "fhirimpl": "hapi",
+              "method": "DELETE",
+              "name": "Practitioner/?"
+            },
+            "value": [
+              1747097012.87,
+              "0.06957867601254235"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}
