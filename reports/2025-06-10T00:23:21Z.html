@@ -1,0 +1,1082 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FHIR Server Performance Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .group-header {
+            background-color: #f8fafc
+            position: sticky
+            top: 48px
+            z-index: 9
+        }
+        .metric-header {
+            background-color: #f1f5f9
+            position: sticky
+            top: 96px
+            z-index: 8
+        }
+        .sticky-header {
+            position: sticky
+            top: 0
+            z-index: 10
+            background-color: #f9fafb
+        }
+        .table-container {
+            max-height: calc(100vh - 200px)
+            overflow-y: auto
+            background: white
+            border-radius: 8px
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)
+        }
+        .table-container::-webkit-scrollbar {
+            width: 8px
+            height: 8px
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1
+            border-radius: 4px
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #888
+            border-radius: 4px
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #666
+        }
+        thead th {
+            background-color: #f9fafb
+        }
+        .sticky-group {
+            position: sticky
+            top: 48px
+            z-index: 9
+            background-color: #f8fafc
+        }
+        .sticky-metric {
+            position: sticky
+            top: 96px
+            z-index: 8
+            background-color: #f1f5f9
+        }
+        .method-content {
+            transition: all 0.3s ease-in-out
+        }
+        .method-content.collapsed {
+            display: none
+        }
+        .toggle-icon {
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)
+            display: inline-flex
+            align-items: center
+            justify-content: center
+            width: 20px
+            height: 20px
+            margin-right: 8px
+            border-radius: 4px
+        }
+        .toggle-icon svg {
+            width: 16px
+            height: 16px
+            stroke: #64748b
+            stroke-width: 2
+            transition: stroke 0.2s ease
+        }
+        .method-row:hover .toggle-icon {
+            background-color: #e2e8f0
+        }
+        .method-row:hover .toggle-icon svg {
+            stroke: #334155
+        }
+        .toggle-icon.collapsed {
+            transform: rotate(-90deg)
+        }
+        .method-row {
+            cursor: pointer
+        }
+        .method-row:hover {
+            background-color: #f8fafc
+        }
+        .method-row:hover .method-name {
+            color: #334155
+        }
+        .method-name {
+            transition: color 0.2s ease
+        }
+        .metric-col {
+            width: 400px
+            min-width: 400px
+            max-width: 400px
+        }
+        .impl-col {
+            width: 160px
+            min-width: 160px
+            max-width: 160px
+        }
+        table {
+            table-layout: fixed
+        }
+    </style>
+    <script>
+        function toggleMethod(methodId, event) {
+            // Prevent event from bubbling up to parent elements
+            event.stopPropagation()
+
+            const content = document.getElementById('content-' + methodId)
+            const icon = document.getElementById('icon-' + methodId)
+            const row = document.getElementById('row-' + methodId)
+
+            content.classList.toggle('collapsed')
+            icon.classList.toggle('collapsed')
+
+            // Save state to localStorage
+            const isCollapsed = content.classList.contains('collapsed')
+            localStorage.setItem('method-' + methodId, isCollapsed)
+        }
+
+        function toggleAllMethods(collapse) {
+            const methodRows = document.querySelectorAll('[id^="row-"]')
+            methodRows.forEach(row => {
+                const methodId = row.id.replace('row-', '')
+                const content = document.getElementById('content-' + methodId)
+                const icon = document.getElementById('icon-' + methodId)
+
+                if (collapse) {
+                    content.classList.add('collapsed')
+                    icon.classList.add('collapsed')
+                } else {
+                    content.classList.remove('collapsed')
+                    icon.classList.remove('collapsed')
+                }
+
+                localStorage.setItem('method-' + methodId, collapse)
+            })
+        }
+
+        // Initialize collapse states on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if this is the first visit
+            const hasVisited = localStorage.getItem('has-visited')
+
+            if (!hasVisited) {
+                // First visit - collapse all
+                toggleAllMethods(true)
+                localStorage.setItem('has-visited', 'true')
+            } else {
+                // Subsequent visits - restore saved states
+                const methodRows = document.querySelectorAll('[id^="row-"]')
+                methodRows.forEach(row => {
+                    const methodId = row.id.replace('row-', '')
+                    const content = document.getElementById('content-' + methodId)
+                    const icon = document.getElementById('icon-' + methodId)
+
+                    const isCollapsed = localStorage.getItem('method-' + methodId) === 'true'
+                    if (isCollapsed) {
+                        content.classList.add('collapsed')
+                        icon.classList.add('collapsed')
+                    }
+                })
+            }
+        })
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8 font-['Inter']">
+    <div class="max-w-[1080px] mx-auto">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-5 bg-white flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-900">FHIR Server Performance Results</h2>
+                <div class="space-x-2">
+                    <button onclick="toggleAllMethods(true)" class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-md">Collapse All</button>
+                    <button onclick="toggleAllMethods(false)" class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-md">Expand All</button>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="min-w-full">
+                    <thead class="sticky-header">
+                        <tr>
+                            <th scope="col" class="metric-col px-6 py-4 text-left text-sm font-semibold text-gray-900">
+                                Metric
+                            </th>
+                            
+                                <th scope="col" class="impl-col px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                                    medplum
+                                </th>
+                            
+                                <th scope="col" class="impl-col px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                                    aidbox
+                                </th>
+                            
+                                <th scope="col" class="impl-col px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                                    hapi
+                                </th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white">
+                        <!-- CRUD Operations Group -->
+                        <tr>
+                            <td colspan="4" class="sticky-group px-6 py-4 text-sm font-semibold text-gray-900">
+                                CRUD Operations
+                            </td>
+                        </tr>
+
+                        <!-- Average RPS -->
+                        <tr>
+                            <td colspan="4" class="sticky-metric px-6 py-3 text-sm font-medium text-gray-700">
+                                Average Requests/Second
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="metric-col pl-6 px-6 py-4 text-sm text-gray-500">
+                                Total RPS
+                            </td>
+                            
+                                    <td class="impl-col px-6 py-4 text-right text-sm text-green-600 font-semibold">
+                                        1581.90
+                                    </td>
+                                
+                                    <td class="impl-col px-6 py-4 text-right text-sm text-green-600 font-semibold">
+                                        3850.49
+                                    </td>
+                                
+                                    <td class="impl-col px-6 py-4 text-right text-sm text-green-600 font-semibold">
+                                        3727.14
+                                    </td>
+                                
+                        </tr>
+
+                        <!-- P99 Latency by Method -->
+                        <tr>
+                            <td colspan="4" class="sticky-metric px-6 py-3 text-sm font-medium text-gray-700">
+                                P99 Latency (milliseconds)
+                            </td>
+                        </tr>
+                        
+                            <tr id="row-DELETE" class="method-row hover:bg-gray-50" onclick="toggleMethod('DELETE', event)">
+                                <td class="metric-col pl-6 px-6 py-3 text-sm font-medium text-gray-900 flex items-center">
+                                    <span id="icon-DELETE" class="toggle-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                    <span class="method-name">DELETE</span>
+                                </td>
+                                
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-red-600 font-semibold">
+                                            266.9
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-green-600 font-semibold">
+                                            39.3
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-gray-500">
+                                            77.4
+                                        </td>
+                                    
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="p-0">
+                                    <div id="content-DELETE" class="method-content">
+                                        <table class="min-w-full">
+                                            
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Claim
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    260.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    39.9
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.5
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Encounter
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    258.6
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    37.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.7
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            ExplanationOfBenefit
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    259.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    55.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.1
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Location
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    272.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.6
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.3
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            MedicationRequest
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    264.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    37.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.1
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Observation
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    258.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    76.9
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Organization
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    269.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    75.9
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Patient
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    283.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    37.9
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.0
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Practitioner
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    276.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.1
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                            <tr id="row-GET" class="method-row hover:bg-gray-50" onclick="toggleMethod('GET', event)">
+                                <td class="metric-col pl-6 px-6 py-3 text-sm font-medium text-gray-900 flex items-center">
+                                    <span id="icon-GET" class="toggle-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                    <span class="method-name">GET</span>
+                                </td>
+                                
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-red-600 font-semibold">
+                                            95.8
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-green-600 font-semibold">
+                                            37.3
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-gray-500">
+                                            73.3
+                                        </td>
+                                    
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="p-0">
+                                    <div id="content-GET" class="method-content">
+                                        <table class="min-w-full">
+                                            
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Claim
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    107.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    73.0
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Encounter
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    106.6
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.6
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    73.5
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            ExplanationOfBenefit
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    108.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    74.8
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Location
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    85.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.9
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    73.8
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            MedicationRequest
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    86.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    73.8
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Observation
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    88.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    35.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    72.2
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Organization
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    85.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    35.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    72.2
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Patient
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    111.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    45.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    74.0
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Practitioner
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    84.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    36.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    72.4
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                            <tr id="row-POST" class="method-row hover:bg-gray-50" onclick="toggleMethod('POST', event)">
+                                <td class="metric-col pl-6 px-6 py-3 text-sm font-medium text-gray-900 flex items-center">
+                                    <span id="icon-POST" class="toggle-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                    <span class="method-name">POST</span>
+                                </td>
+                                
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-red-600 font-semibold">
+                                            295.3
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-green-600 font-semibold">
+                                            44.2
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-gray-500">
+                                            81.2
+                                        </td>
+                                    
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="p-0">
+                                    <div id="content-POST" class="method-content">
+                                        <table class="min-w-full">
+                                            
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Claim
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    279.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    48.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    80.4
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Encounter
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    343.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    41.6
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    84.9
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            ExplanationOfBenefit
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    285.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    51.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    80.4
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Location
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    302.9
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    43.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.4
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            MedicationRequest
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    273.9
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    46.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    84.1
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Observation
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    276.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    44.4
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    85.9
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Organization
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    250.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    39.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    76.9
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Patient
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    338.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    43.5
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    82.3
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Practitioner
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    308.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    39.4
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.7
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                            <tr id="row-PUT" class="method-row hover:bg-gray-50" onclick="toggleMethod('PUT', event)">
+                                <td class="metric-col pl-6 px-6 py-3 text-sm font-medium text-gray-900 flex items-center">
+                                    <span id="icon-PUT" class="toggle-icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </span>
+                                    <span class="method-name">PUT</span>
+                                </td>
+                                
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-red-600 font-semibold">
+                                            341.6
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-green-600 font-semibold">
+                                            46.3
+                                        </td>
+                                    
+                                        <td class="impl-col px-6 py-3 text-right text-sm text-gray-500">
+                                            78.2
+                                        </td>
+                                    
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="p-0">
+                                    <div id="content-PUT" class="method-content">
+                                        <table class="min-w-full">
+                                            
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Claim
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    322.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    51.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.3
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Encounter
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    389.1
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    44.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.0
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            ExplanationOfBenefit
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    329.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    61.0
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    79.3
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Location
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    353.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    41.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.4
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            MedicationRequest
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    295.4
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    48.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    78.6
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Observation
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    320.4
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    46.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    76.8
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Organization
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    286.4
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    40.4
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.2
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Patient
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    408.8
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    41.2
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    79.8
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                                    <tr class="hover:bg-gray-50">
+                                                        <td class="metric-col pl-12 px-6 py-2 text-sm text-gray-500">
+                                                            Practitioner
+                                                        </td>
+                                                        
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-red-600 font-semibold">
+                                                                    369.3
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-green-600 font-semibold">
+                                                                    41.7
+                                                                </td>
+                                                            
+                                                                <td class="impl-col px-6 py-2 text-right text-sm text-gray-500">
+                                                                    77.7
+                                                                </td>
+                                                            
+                                                    </tr>
+                                                
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="mt-4 text-center text-sm text-gray-500">
+            Generated on 6/10/2025, 1:02:39 AM
+        </div>
+    </div>
+</body>
+</html>
