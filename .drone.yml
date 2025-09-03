@@ -115,7 +115,7 @@ steps:
   - gcloud auth configure-docker us-east1-docker.pkg.dev
   - rm /tmp/key.json
   
-  - docker compose -f ci_search_suite.yaml -f docker-compose.override.yml up
+  - docker compose -f ci_search_suite.yaml -f docker-compose.override.yml up aidbox postgres
 
   ## Setup RUNID
   - export RUNID=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
