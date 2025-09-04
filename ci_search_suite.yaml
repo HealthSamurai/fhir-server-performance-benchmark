@@ -271,6 +271,26 @@ services:
     volumes:
       - ./k6:/k6
       - ./runner.sh:/runner.sh:ro
+    sysctls:
+      # Increase ephemeral port range
+      net.ipv4.ip_local_port_range: "1024 65535"
+      # Reduce TIME_WAIT timeout
+      net.ipv4.tcp_fin_timeout: 15
+      # Enable connection reuse
+      net.ipv4.tcp_tw_reuse: 1
+      # Increase max connections
+      net.core.somaxconn: 65535
+      # Increase network buffers
+      net.core.netdev_max_backlog: 16384
+    ulimits:
+      # Increase file descriptor limits
+      nofile:
+        soft: 100000
+        hard: 100000
+      # Increase number of processes
+      nproc:
+        soft: 32768
+        hard: 32768
 
   redis:
     container_name: perf-redis
