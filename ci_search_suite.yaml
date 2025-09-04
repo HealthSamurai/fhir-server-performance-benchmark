@@ -280,8 +280,6 @@ services:
       net.ipv4.tcp_tw_reuse: 1
       # Increase max connections
       net.core.somaxconn: 65535
-      # Increase network buffers
-      net.core.netdev_max_backlog: 16384
     ulimits:
       # Increase file descriptor limits
       nofile:
