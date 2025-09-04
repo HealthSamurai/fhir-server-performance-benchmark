@@ -7,6 +7,7 @@ const bundleSize = new Counter('bundle_size')
 
 export const options = {
   discardResponseBodies: true,
+  setupTimeout: '10m',
   scenarios: {
     import: {
       executor: 'constant-vus',
