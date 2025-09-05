@@ -133,6 +133,7 @@ steps:
 
   ## Run infra for search tests
   - ./runner.sh bootstrap -f ci_search_suite.yaml -f docker-compose.override.yml
+  - ./runner.sh -t /k6/prewarm.js -f ci_search_suite.yaml -f docker-compose.override.yml
   - ./runner.sh -t /k6/search.js -f ci_search_suite.yaml -f docker-compose.override.yml
   ## Cleanup
   - sleep 120
