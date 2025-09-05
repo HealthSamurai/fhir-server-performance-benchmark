@@ -116,6 +116,7 @@ services:
       BOX_FHIR_SEARCH_AUTHORIZE_INLINE_REQUESTS: true
       BOX_FHIR_SEARCH_COMPARISONS: true
       BOX_FHIR_TERMINOLOGY_SERVICE_BASE_URL: https://tx.health-samurai.io/fhir
+      BOX_FHIR_LEGACY_FCE_PACKAGE: app.aidbox.main#0.0.1
       BOX_METRICS_PORT: 8379
       BOX_INIT_BUNDLE: file:///tmp/initbundle.json
       BOX_ROOT_CLIENT_SECRET: secret
