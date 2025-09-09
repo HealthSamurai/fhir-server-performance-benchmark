@@ -89,7 +89,7 @@ services:
   aidbox:
     container_name: perf-aidbox
     # image: healthsamurai/aidboxone:edge
-    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-73e4d1747d403f7e556f8bc7b1c695bf165546c7
+    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-f5aa0650a6b3cec7dab298d3577a5a1f83da88bc
     depends_on:
       postgres:
         condition: service_healthy
