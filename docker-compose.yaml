@@ -146,22 +146,15 @@ services:
     command:
       - --housekeeping_interval=30s
       - --max_housekeeping_interval=60s
-      - --disable_metrics=disk,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,cpu_topology,resctrl
+      - --disable_metrics=advtcp,app_armor,cpu_topology,cpuset,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp,zfs
       - --docker_only=true
-      - --disable_root_cgroup_stats=true
-      - --enable_load_reader=false
-      - --max_procs=128
+      - --store_container_labels=false
+      - --whitelisted_container_labels=com.docker.compose.service
     networks:
       - global
     privileged: true
-    sysctls:
-      - fs.inotify.max_user_watches=524288
-      - fs.inotify.max_user_instances=512
     ulimits:
       nofile:
-        soft: 65535
-        hard: 65535
-      nproc:
         soft: 65535
         hard: 65535
     volumes:
