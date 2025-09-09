@@ -143,9 +143,18 @@ services:
   cadvisor:
     container_name: perf-cadvisor
     image: gcr.io/cadvisor/cadvisor:latest
+    command:
+      - --housekeeping_interval=10s
+      - --max_housekeeping_interval=15s
+      - --disable_metrics=disk,tcp,udp,percpu,sched,process
+      - --docker_only=true
     networks:
       - global
     privileged: true
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
