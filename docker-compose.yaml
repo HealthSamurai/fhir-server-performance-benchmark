@@ -142,14 +142,15 @@ services:
 
   cadvisor:
     container_name: perf-cadvisor
-    image: gcr.io/cadvisor/cadvisor:latest
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
     command:
       - --housekeeping_interval=30s
       - --max_housekeeping_interval=60s
-      - --disable_metrics=advtcp,app_armor,cpu_topology,cpuset,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp,zfs
+      - --disable_metrics=advtcp,cpu_topology,cpuset,hugetlb,memory_numa,percpu,referenced_memory,resctrl,sched,tcp,udp,process
       - --docker_only=true
       - --store_container_labels=false
-      - --whitelisted_container_labels=com.docker.compose.service
+      - --disable_root_cgroup_stats=true
+      - --max_procs=2
     networks:
       - global
     privileged: true
