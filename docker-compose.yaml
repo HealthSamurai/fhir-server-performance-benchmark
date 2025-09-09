@@ -144,15 +144,24 @@ services:
     container_name: perf-cadvisor
     image: gcr.io/cadvisor/cadvisor:latest
     command:
-      - --housekeeping_interval=10s
-      - --max_housekeeping_interval=15s
-      - --disable_metrics=disk,tcp,udp,percpu,sched,process
+      - --housekeeping_interval=30s
+      - --max_housekeeping_interval=60s
+      - --disable_metrics=disk,tcp,udp,percpu,sched,process,hugetlb,referenced_memory,cpu_topology,resctrl
       - --docker_only=true
+      - --disable_root_cgroup_stats=true
+      - --enable_load_reader=false
+      - --max_procs=128
     networks:
       - global
     privileged: true
+    sysctls:
+      - fs.inotify.max_user_watches=524288
+      - fs.inotify.max_user_instances=512
     ulimits:
       nofile:
+        soft: 65535
+        hard: 65535
+      nproc:
         soft: 65535
         hard: 65535
     volumes:
