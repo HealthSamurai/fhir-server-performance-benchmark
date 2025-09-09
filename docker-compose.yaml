@@ -143,9 +143,20 @@ services:
   cadvisor:
     container_name: perf-cadvisor
     image: gcr.io/cadvisor/cadvisor:latest
+    entrypoint: 
+      - /bin/sh
+      - -c
+      - |
+        echo 8192 > /proc/sys/fs/inotify/max_user_instances 2>/dev/null || true
+        echo 524288 > /proc/sys/fs/inotify/max_user_watches 2>/dev/null || true
+        /usr/bin/cadvisor --housekeeping_interval=30s --docker_only=true --disable_metrics=percpu,sched,tcp,udp,disk,diskIO,network --disable_root_cgroup_stats=true
     networks:
       - global 
     privileged: true
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
