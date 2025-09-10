@@ -88,7 +88,7 @@ services:
 
   aidbox:
     container_name: perf-aidbox
-    image: healthsamurai/aidboxone:edge
+    image: healthsamurai/aidboxone:2508
     depends_on:
       postgres:
         condition: service_healthy
