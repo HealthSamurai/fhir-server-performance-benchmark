@@ -158,6 +158,7 @@ steps:
     zfs set mountpoint=/tmp/golden $CLONE_NAME
     
   # Verify mount
+  - gcloud components install docker-credential-gcr
   - zfs list -o name,mounted,mountpoint | grep ci- || true
 
   ## GCP auth
