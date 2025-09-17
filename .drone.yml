@@ -161,9 +161,10 @@ steps:
   - zfs list -o name,mounted,mountpoint | grep ci- || true
 
   ## GCP auth
+  - export PATH=$PATH:/google-cloud-sdk/bin
   - printf "%s" "$DRONE_CI_GCP_SA" > /tmp/key.json
   - gcloud auth activate-service-account --key-file=/tmp/key.json
-  - gcloud auth configure-docker us-east1-docker.pkg.dev
+  - gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
   - rm /tmp/key.json
 
   ## Run infra for CRUD and Import tests
