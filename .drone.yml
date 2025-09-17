@@ -166,6 +166,8 @@ steps:
   - gcloud auth configure-docker us-east1-docker.pkg.dev
   - rm /tmp/key.json
 
+  - docker pull  us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-2a02ff64618a58f4270fe58d48e49e2155e678c4
+
   ## Run infra for CRUD and Import tests
   - ./runner.sh bootstrap
   ## Prewarm
