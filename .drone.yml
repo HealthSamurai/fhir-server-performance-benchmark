@@ -163,6 +163,7 @@ steps:
   ## GCP auth
   - printf "%s" "$DRONE_CI_GCP_SA" > /tmp/key.json
   - gcloud auth activate-service-account --key-file=/tmp/key.json
+  - gcloud info
   - gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
   - rm /tmp/key.json
 
