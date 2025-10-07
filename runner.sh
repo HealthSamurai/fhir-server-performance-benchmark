@@ -47,7 +47,7 @@ show_usage() {
 
 # Function to bootstrap Docker Compose services with retry logic
 bootstrap_services() {
-    local max_attempts=5
+    local max_attempts=10
     local attempt=1
 
     echo "Pulling docker images..."
@@ -69,7 +69,7 @@ bootstrap_services() {
 
             if [ $attempt -lt $max_attempts ]; then
                 echo "Waiting 10 seconds before retry..."
-                sleep 10
+                sleep 20
             fi
 
             attempt=$((attempt + 1))

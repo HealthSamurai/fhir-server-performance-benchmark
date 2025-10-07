@@ -80,7 +80,6 @@ steps:
     services:
       postgres:
         volumes: !override
-          - /tmp/default:/var/lib/postgresql/data:delegated
           - ./infra/postgres/init:/docker-entrypoint-initdb.d
           - ./infra/postgres/postgres.conf:/postgres.conf
       aidbox:

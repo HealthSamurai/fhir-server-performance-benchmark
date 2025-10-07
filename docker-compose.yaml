@@ -8,7 +8,7 @@ volumes:
 services:
   postgres:
     container_name: perf-postgres
-    image: postgres:17
+    image: google/alloydbomni
     command: postgres -c config_file=/postgres.conf
     ports:
       - "13020:5432"
