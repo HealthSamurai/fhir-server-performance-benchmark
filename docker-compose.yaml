@@ -12,6 +12,11 @@ services:
     command: postgres -c config_file=/postgres.conf
     ports:
       - "13020:5432"
+    cap_add:
+      - SYS_RESOURCE
+      - IPC_LOCK
+    security_opt:
+      - seccomp:unconfined
     deploy:
       resources:
         limits:
