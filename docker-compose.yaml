@@ -276,7 +276,7 @@ services:
     build:
       context: infra/tgz
     command:
-      - "https://storage.googleapis.com/aidbox-public/synthea/performance/bulk_1k.tar.gz"
+      - "https://storage.googleapis.com/aidbox-public/synthea/performance/bulk_10k.tar.gz"
     volumes:
       - tgzdata:/data
     working_dir: /data
