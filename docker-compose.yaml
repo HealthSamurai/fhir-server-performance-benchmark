@@ -85,9 +85,7 @@ services:
   aidbox:
     container_name: perf-aidbox
     #image: healthsamurai/aidboxone:edge
-    #image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-775f49ddc79f60fe29cec5acb5d13e9a4e529f27
-    #image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-06cf8cd52a27df036b98adb49c7b1dddfa451e22
-    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-3d1d0318846ab04f1ec6b90027c13f9e5aa06205
+    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-0fed36db6fbc59ac9ae65b8b05695c799fad67ab
 
     depends_on:
       postgres:
@@ -276,7 +274,7 @@ services:
     build:
       context: infra/tgz
     command:
-      - "https://storage.googleapis.com/aidbox-public/synthea/performance/bulk_10k.tar.gz"
+      - "https://storage.googleapis.com/aidbox-public/synthea/performance/bulk_1k.tar.gz"
     volumes:
       - tgzdata:/data
     working_dir: /data
