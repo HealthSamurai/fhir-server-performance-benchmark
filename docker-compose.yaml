@@ -118,7 +118,7 @@ services:
       BOX_WEB_MAX_BODY: 209715200
       BOX_WEB_PORT: 8080
       BOX_FHIR_SEARCH_DEFAULT_PARAMS_TOTAL: none
-      JAVA_OPTS: "-XX:MaxRAMPercentage=80  -Xcomp"
+      JAVA_OPTS: "-XX:MaxRAMPercentage=80"
     healthcheck:
       test: curl -f http://localhost:8080/health
       interval: 30s
