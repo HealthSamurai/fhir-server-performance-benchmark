@@ -79,7 +79,7 @@ services:
 
   aidbox:
     container_name: perf-aidbox
-    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-f7df0ff3bbe8a4e3b1caa52759d62ecb9ab6d23e
+    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-c66ce092d88fd82ae432c6ea115fb6f1224332bc
 
     depends_on:
       postgres:
