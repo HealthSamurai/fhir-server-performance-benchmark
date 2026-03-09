@@ -81,7 +81,7 @@ services:
 
   aidbox:
     container_name: perf-aidbox
-    image: healthsamurai/aidboxone:edge
+    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-f135782ea1465fadc9e2ca125d2f33a4e96300f5
     pull_policy: always
 
     depends_on:
