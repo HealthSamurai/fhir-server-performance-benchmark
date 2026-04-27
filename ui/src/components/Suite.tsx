@@ -20,7 +20,8 @@ function calculateAverageMetrics(testCase: any) {
       category: 'Average',
       aidbox: Math.round(testCase.data.reduce((sum: number, dp: any) => sum + dp.aidbox, 0) / testCase.data.length),
       medplum: Math.round(testCase.data.reduce((sum: number, dp: any) => sum + dp.medplum, 0) / testCase.data.length),
-      hapi: Math.round(testCase.data.reduce((sum: number, dp: any) => sum + dp.hapi, 0) / testCase.data.length)
+      hapi: Math.round(testCase.data.reduce((sum: number, dp: any) => sum + dp.hapi, 0) / testCase.data.length),
+      octofhir: Math.round(testCase.data.reduce((sum: number, dp: any) => sum + dp.octofhir, 0) / testCase.data.length)
     }]
   }
 }
@@ -34,8 +35,8 @@ export function Suite({ suite }: { suite: BenchmarkSuite }) {
   }
 
   // Check if all servers return 0 in the result data
-  const hasValidData = suite.result?.data?.some((dataPoint: any) => 
-    dataPoint.aidbox !== 0 || dataPoint.medplum !== 0 || dataPoint.hapi !== 0
+  const hasValidData = suite.result?.data?.some((dataPoint: any) =>
+    dataPoint.aidbox !== 0 || dataPoint.medplum !== 0 || dataPoint.hapi !== 0 || dataPoint.octofhir !== 0
   );
 
   // Don't render if all values are 0

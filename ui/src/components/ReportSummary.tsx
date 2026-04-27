@@ -17,20 +17,23 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''
 const serverIcons = {
   aidbox: `${basePath}/images/aidbox.svg`,
   medplum: `${basePath}/images/medplum.svg`,
-  hapi: `${basePath}/images/hapi.png`
+  hapi: `${basePath}/images/hapi.png`,
+  octofhir: `${basePath}/images/octofhir.png`
 }
 
 function calculateServerStats(suites: BenchmarkSuite[]) {
   const stats = {
     aidbox: { wins: 0, avgRps: 0 },
     medplum: { wins: 0, avgRps: 0 },
-    hapi: { wins: 0, avgRps: 0 }
+    hapi: { wins: 0, avgRps: 0 },
+    octofhir: { wins: 0, avgRps: 0 }
   }
 
   let totalRps = {
     aidbox: 0,
     medplum: 0,
-    hapi: 0
+    hapi: 0,
+    octofhir: 0
   }
 
   let rpsTestCount = 0
@@ -41,7 +44,8 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
       const averages = {
         aidbox: testCase.data.reduce((sum: number, dp: any) => sum + dp.aidbox, 0) / testCase.data.length,
         medplum: testCase.data.reduce((sum: number, dp: any) => sum + dp.medplum, 0) / testCase.data.length,
-        hapi: testCase.data.reduce((sum: number, dp: any) => sum + dp.hapi, 0) / testCase.data.length
+        hapi: testCase.data.reduce((sum: number, dp: any) => sum + dp.hapi, 0) / testCase.data.length,
+        octofhir: testCase.data.reduce((sum: number, dp: any) => sum + dp.octofhir, 0) / testCase.data.length
       }
 
       // For metrics where lower is better (like response time), we want the minimum
@@ -88,7 +92,7 @@ export function ReportSummary({ report }: { report: BenchmarkReport }) {
         <CardDescription>Overall performance comparison across all test suites</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-8 pb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 pb-6">
           {Object.entries(stats).map(([server, data]) => (
             <div key={server} className="flex flex-col items-center">
               <div className="relative w-16 h-16 mb-4">

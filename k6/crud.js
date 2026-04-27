@@ -194,7 +194,7 @@ export default function ({ baseUrl, params, seeds }) {
           null,
           { ...params, responseType: 'none', tags: { name: `${rt}/?` } }
         )
-        check(x, { [`${rt} delete`]: ({ status }) => status === 200 })
+        check(x, { [`${rt} delete`]: ({ status }) => status === 200 || status === 204 })
       })
     })
   })

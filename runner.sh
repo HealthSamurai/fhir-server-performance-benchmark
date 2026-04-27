@@ -5,12 +5,12 @@ set -e
 # CLI utility for running FHIR server performance tests
 # Usage: ./runner.sh [-t test] [-s server] [-id runId]
 #   -t test: path to test file (e.g., /test/crud.js, /test/search.js)
-#   -s server: target server: aidbox, hapi, medplum (optional - runs on all servers if not specified)
+#   -s server: target server: aidbox, hapi, medplum, octofhir (optional - runs on all servers if not specified)
 #   -id runId: custom run ID (optional - defaults to current UTC timestamp)
 
 # Default values
 DEFAULT_TEST="/k6/prewarm.js"
-ALL_SERVERS="aidbox hapi medplum"
+ALL_SERVERS="aidbox hapi medplum octofhir"
 
 # Function to display usage
 show_usage() {
@@ -22,7 +22,7 @@ show_usage() {
     echo ""
     echo "Arguments:"
     echo "  -t test    Path to test file (e.g., /k6/crud.js, /k6/search.js)"
-    echo "  -s server  Target server: aidbox, hapi, medplum"
+    echo "  -s server  Target server: aidbox, hapi, medplum, octofhir"
     echo "  -id runId  Custom run ID (optional - defaults to current UTC timestamp)"
     echo "  -f file    Docker Compose file(s) to use (can be specified multiple times)"
     echo "             If not specified, uses the default docker-compose.yaml"
@@ -124,6 +124,10 @@ run_test_on_server() {
                 export OAUTH2_PASSWORD=medplum_admin
                 export OAUTH2_LOGIN_URL=http://medplum:8103/auth/login
                 export OAUTH2_TOKEN_URL=http://medplum:8103/oauth2/token"
+            ;;
+        "octofhir")
+            run_env="${run_env}
+                export BASE_URL=http://octofhir:8888/fhir"
             ;;
     esac
 

@@ -92,7 +92,8 @@ function createBenchmarkDataPoints(groupedMetrics: Map<string, Map<string, numbe
             category: resourceType,
             aidbox: 0,
             medplum: 0,
-            hapi: 0
+            hapi: 0,
+            octofhir: 0
         };
 
         for (const [server, value] of serverMetrics) {
@@ -126,7 +127,8 @@ function getTotalRPS(results: PrometheusResult[], precision: number = 0): Benchm
         category: 'Total',
         aidbox: precision == 0 ? Math.round(serverTotals.get('aidbox') || 0) : parseFloat(serverTotals.get('aidbox')?.toFixed(precision) || '0'),
         medplum: precision == 0 ? Math.round(serverTotals.get('medplum') || 0) : parseFloat(serverTotals.get('medplum')?.toFixed(precision) || '0'),
-        hapi: precision == 0 ? Math.round(serverTotals.get('hapi') || 0) : parseFloat(serverTotals.get('hapi')?.toFixed(precision) || '0')
+        hapi: precision == 0 ? Math.round(serverTotals.get('hapi') || 0) : parseFloat(serverTotals.get('hapi')?.toFixed(precision) || '0'),
+        octofhir: precision == 0 ? Math.round(serverTotals.get('octofhir') || 0) : parseFloat(serverTotals.get('octofhir')?.toFixed(precision) || '0')
     };
 
     return [dataPoint];
@@ -196,10 +198,11 @@ export function convertSourceToBenchmarkReport(
                 category: 'Import',
                 aidbox: 0,
                 medplum: 0,
-                hapi: 0
+                hapi: 0,
+                octofhir: 0
             }
             sourceData.import.test_cases.data.result.forEach(result => {
-                const server = result.metric.fhirimpl as 'aidbox' | 'medplum' | 'hapi';
+                const server = result.metric.fhirimpl as 'aidbox' | 'medplum' | 'hapi' | 'octofhir';
                 data[server] = Math.round(parseFloat(result.value[1]))
             })
 

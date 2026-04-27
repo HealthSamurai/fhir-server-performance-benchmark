@@ -135,7 +135,46 @@ services:
       retries: 10
 
 ## ------------------------------------------------
-## Medplum 
+## OctoFHIR
+## ------------------------------------------------
+  octofhir:
+    container_name: perf-octofhir
+    image: ghcr.io/octofhir/octofhir-server:latest
+    pull_policy: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 20G
+    environment:
+      OCTOFHIR__SERVER__HOST: "0.0.0.0"
+      OCTOFHIR__SERVER__PORT: "8888"
+      OCTOFHIR__SERVER__BASE_URL: "http://octofhir:8888"
+      OCTOFHIR__SERVER__BODY_LIMIT_BYTES: "104857600"
+      OCTOFHIR__STORAGE__POSTGRES__HOST: postgres
+      OCTOFHIR__STORAGE__POSTGRES__PORT: "5432"
+      OCTOFHIR__STORAGE__POSTGRES__USER: postgres
+      OCTOFHIR__STORAGE__POSTGRES__PASSWORD: postgres
+      OCTOFHIR__STORAGE__POSTGRES__DATABASE: octofhir
+      OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: "32"
+      OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: "true"
+      OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: "false"
+      OCTOFHIR__AUDIT__ENABLED: "false"
+      OCTOFHIR__LOGGING__LEVEL: "info"
+      RUST_LOG: "info"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:8888/healthz || exit 1"]
+      interval: 10s
+      start_period: 60s
+      retries: 30
+    ports:
+      - "13100:8888"
+
+## ------------------------------------------------
+## Medplum
 ## ------------------------------------------------
   medplum:
     image: medplum/medplum-server:latest
@@ -191,6 +230,8 @@ services:
       medplum:
         condition: service_healthy
       hapi-checker:
+        condition: service_healthy
+      octofhir:
         condition: service_healthy
     profiles:
       - donotstart

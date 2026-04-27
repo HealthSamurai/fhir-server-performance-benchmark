@@ -173,11 +173,15 @@ function validateBenchmarkDataPoint(dataPoint: any, suiteIndex: number, dataInde
     throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: hapi must be a number`);
   }
 
+  // Backwards compatibility: older reports have no octofhir field; treat as 0.
+  const octofhir = typeof dataPoint.octofhir === 'number' ? dataPoint.octofhir : 0;
+
   return {
     category: dataPoint.category,
     aidbox: dataPoint.aidbox,
     medplum: dataPoint.medplum,
     hapi: dataPoint.hapi,
+    octofhir,
   };
 }
 
@@ -228,7 +232,7 @@ function validateTestCase(testCase: any, suiteIndex: number, testIndex: number) 
  * Get all server names from a benchmark report
  */
 export function getServerNames(report: BenchmarkReport): ServerName[] {
-  return ['aidbox', 'medplum', 'hapi'];
+  return ['aidbox', 'medplum', 'hapi', 'octofhir'];
 }
 
 /**

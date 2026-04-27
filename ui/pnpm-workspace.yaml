@@ -6,3 +6,6 @@ overrides:
   next@>=15.4.0-canary.0 <15.4.9: '>=15.4.9'
   next@>=9.5.0 <15.5.13: '>=15.5.13'
   postcss@<8.5.10: '>=8.5.10'
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

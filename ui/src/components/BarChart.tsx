@@ -15,7 +15,8 @@ import { BenchmarkResult } from "@/types/benchmark.types"
 const chartConfig = {
     aidbox: { label: "Aidbox", },
     medplum: { label: "Medplum", },
-    hapi: { label: "Hapi", }
+    hapi: { label: "Hapi", },
+    octofhir: { label: "OctoFHIR", }
 } satisfies ChartConfig
 
 
