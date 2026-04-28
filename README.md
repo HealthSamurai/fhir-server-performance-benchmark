@@ -1,5 +1,7 @@
 # FHIR Server Performance Benchmark
 
+[![Build Status](https://drone-ci.aidbox.app/api/badges/HealthSamurai/fhir-server-performance-benchmark/status.svg)](https://drone-ci.aidbox.app/HealthSamurai/fhir-server-performance-benchmark)
+
 [Reports](https://healthsamurai.github.io/fhir-server-performance-benchmark)
 
 
