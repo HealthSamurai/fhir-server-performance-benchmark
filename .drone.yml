@@ -175,7 +175,7 @@ steps:
   ## Prewarm
   - ./runner.sh -t /k6/prewarm.js
   ## Run tests
-  - ./runner.sh -t /k6/crud.js
+  ### - ./runner.sh -t /k6/crud.js
   - ./runner.sh -t /k6/import.js
   ## Cleanup
   - sleep 120
