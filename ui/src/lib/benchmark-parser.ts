@@ -57,6 +57,9 @@ export function validateBenchmarkReport(data: any): BenchmarkReport {
     end_time: data.end_time,
     duration: data.duration,
     suites: validatedSuites,
+    grafanaSnapshot: data.grafanaSnapshot && typeof data.grafanaSnapshot.url === 'string'
+      ? { url: data.grafanaSnapshot.url }
+      : undefined,
   };
 }
 

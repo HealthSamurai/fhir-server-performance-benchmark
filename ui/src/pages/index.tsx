@@ -3,27 +3,73 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Github } from "lucide-react";
+import { BranchSelector } from "@/components/BranchSelector";
 
 const PAGE_SIZE = 30;
 
 export default function Home() {
+  const [branch, setBranch] = useState<string>("main");
+  const [availableBranches, setAvailableBranches] = useState<string[]>(["main"]);
   const [runs, setRuns] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
+  // Read ?branch= once on mount and fetch with that exact value. Doing this
+  // in a single pass avoids a double-render race where the initial main fetch
+  // could resolve after the branch fetch and overwrite the list.
   useEffect(() => {
-    fetchReportsFromGCS();
+    const b = typeof window !== "undefined"
+      ? (new URLSearchParams(window.location.search).get("branch") || "main")
+      : "main";
+    setBranch(b);
+    fetchReportsFromGCS(b);
+    fetchAvailableBranches();
   }, []);
 
-  const fetchReportsFromGCS = async () => {
+  const fetchAvailableBranches = async () => {
+    try {
+      const bucketUrl = 'https://storage.googleapis.com/storage/v1/b/samurai-public/o';
+      const params = new URLSearchParams({
+        prefix: 'fhir-server-performance-benchmark/',
+        delimiter: '/',
+        fields: 'prefixes',
+      });
+      const res = await fetch(`${bucketUrl}?${params}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const branches: string[] = (data.prefixes || [])
+        .map((p: string) => p.match(/fhir-server-performance-benchmark\/([^\/]+)\/$/))
+        .filter((m: RegExpMatchArray | null) => m)
+        .map((m: RegExpMatchArray) => m[1]);
+      setAvailableBranches(['main', ...branches.filter((b) => b !== 'main')]);
+    } catch (err) {
+      console.error('Error fetching branches:', err);
+    }
+  };
+
+  const handleBranchChange = (next: string) => {
+    setBranch(next);
+    setPage(1);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (next === 'main') url.searchParams.delete('branch');
+      else url.searchParams.set('branch', next);
+      window.history.replaceState({}, '', url.toString());
+    }
+    fetchReportsFromGCS(next);
+  };
+
+  const fetchReportsFromGCS = async (branchName: string = branch) => {
     try {
       setLoading(true);
       setError(null);
 
       // GCS public bucket URL for listing objects
       const bucketUrl = 'https://storage.googleapis.com/storage/v1/b/samurai-public/o';
-      const prefix = 'fhir-server-performance-benchmark/SNAPSHOT_';
+      const prefix = branchName === 'main'
+        ? 'fhir-server-performance-benchmark/SNAPSHOT_'
+        : `fhir-server-performance-benchmark/${branchName}/SNAPSHOT_`;
 
       const params = new URLSearchParams({
         prefix: prefix,
@@ -105,16 +151,23 @@ export default function Home() {
                 Tests
               </Link>
             </div>
-            <a
-              href="https://github.com/HealthSamurai/fhir-server-performance-benchmark"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
-              title="View source on GitHub (new tab)"
-            >
-              <Github className="w-5 h-5" />
-              <span>GitHub</span>
-            </a>
+            <div className="flex items-center space-x-4">
+              <BranchSelector
+                selectedBranch={branch}
+                onBranchChange={handleBranchChange}
+                availableBranches={availableBranches}
+              />
+              <a
+                href="https://github.com/HealthSamurai/fhir-server-performance-benchmark"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
+                title="View source on GitHub (new tab)"
+              >
+                <Github className="w-5 h-5" />
+                <span>GitHub</span>
+              </a>
+            </div>
           </div>
         </div>
       </header>
@@ -134,7 +187,7 @@ export default function Home() {
             <p className="font-medium">Error loading reports</p>
             <p className="text-sm">{error}</p>
             <button
-              onClick={fetchReportsFromGCS}
+              onClick={() => fetchReportsFromGCS()}
               className="mt-2 text-sm underline hover:no-underline"
             >
               Try again
@@ -168,6 +221,11 @@ export default function Home() {
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-800">
                   Benchmark reports
+                  {branch !== 'main' && (
+                    <span className="ml-2 px-2 py-0.5 rounded text-xs font-mono bg-yellow-100 text-yellow-800">
+                      branch: {branch}
+                    </span>
+                  )}
                 </h2>
               </div>
 
@@ -175,7 +233,7 @@ export default function Home() {
                 {visible.map((run) => (
                   <Link
                     key={run}
-                    href={`/report?runid=${run}`}
+                    href={branch === 'main' ? `/report?runid=${run}` : `/report?runid=${run}&branch=${branch}`}
                     className="block p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
                     <div className="flex items-center justify-between">

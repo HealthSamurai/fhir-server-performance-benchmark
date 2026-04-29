@@ -7,6 +7,8 @@ import { BenchmarkReport } from "@/types/benchmark.types";
 import { parseBenchmarkReport } from "@/lib/benchmark-parser";
 import { Suite } from "@/components/Suite";
 import { ReportSummary } from "@/components/ReportSummary";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExternalLink } from "lucide-react";
 
 export default function ReportPage() {
   const searchParams = useSearchParams();
@@ -81,11 +83,9 @@ export default function ReportPage() {
               )}
             </div>
             {report && (
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2 text-sm text-gray-600">
-                  <span>Run ID:</span>
-                  <span className="font-medium">{report.runid}</span>
-                </div>
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <span>Run ID:</span>
+                <span className="font-medium">{report.runid}</span>
               </div>
             )}
           </div>
@@ -121,6 +121,32 @@ export default function ReportPage() {
         {!loading && !error && report && (
           <>
             <ReportSummary report={report} />
+            {report.grafanaSnapshot?.url && (
+              <Card className="w-full mt-6 mb-12">
+                <CardHeader className="border-b flex flex-row items-center justify-between">
+                  <CardTitle>Grafana snapshot</CardTitle>
+                  <a
+                    href={report.grafanaSnapshot.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
+                    title="Open Grafana snapshot (new tab)"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://cdn.simpleicons.org/grafana" alt="" className="w-4 h-4" />
+                    <span>Open in Grafana</span>
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" />
+                  </a>
+                </CardHeader>
+                <iframe
+                  src={`${report.grafanaSnapshot.url}?kiosk&theme=light`}
+                  className="w-full"
+                  style={{ height: 800, border: 0 }}
+                  title="Grafana snapshot"
+                  loading="lazy"
+                />
+              </Card>
+            )}
             {report.suites.map((suite) => (
               <div key={suite.name} className="mb-12">
                 <Suite suite={suite} />

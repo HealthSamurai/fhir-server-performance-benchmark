@@ -131,6 +131,11 @@ async function execute(metricsUrl, path, params, headers) {
 
     return data
   } catch (error) {
+    // Surface the underlying network/TLS reason — Node's fetch wraps the real
+    // error in a generic "fetch failed" without details unless we look at .cause.
+    if (error.cause) {
+      console.error('  underlying cause:', error.cause)
+    }
     throw new Error(`Failed to execute Prometheus query: ${error.message}`)
   }
 }
