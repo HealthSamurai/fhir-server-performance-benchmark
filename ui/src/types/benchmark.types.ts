@@ -32,6 +32,7 @@ export interface BenchmarkReport {
   end_time: string;
   duration: number;
   suites: BenchmarkSuite[];
+  grafanaSnapshot?: { url: string };
 }
 
 // Specific types for common result types

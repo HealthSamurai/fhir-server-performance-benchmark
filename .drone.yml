@@ -205,9 +205,12 @@ steps:
 - name: snapshot
   environment:
     METRICS_URL: https://vm.cdr.aidbox.dev
+    GRAFANA_URL: https://grafana.cdr.aidbox.dev
     METRICS_USERNAME: vm
     METRICS_PASSWORD:
       from_secret: VMAUTH
+    GRAFANA_TOKEN:
+      from_secret: GRAFANA_TOKEN
   image: node:24-alpine
   depends_on:
   - test
@@ -217,6 +220,7 @@ steps:
   commands:
   - export RUNID=$(cat /tmp/workspace/run-id)
   - node scripts/generate-snapshot.js -o /tmp/workspace/reports
+  - node scripts/grafana-snapshot.js "$RUNID" --report "/tmp/workspace/reports/SNAPSHOT_$RUNID.json"
 
 - name: upload-to-gcs
   environment:
