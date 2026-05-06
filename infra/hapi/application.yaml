@@ -3,6 +3,7 @@ hapi:
     graphql_enabled: true
     bulk_export_enabled: true
     enable_index_missing_fields: true
+    reuse_cached_search_results_millis: 0
 management:
   endpoints:
     enabled-by-default: false

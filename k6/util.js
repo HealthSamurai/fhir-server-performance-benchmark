@@ -59,6 +59,7 @@ export function headers() {
     "Accept-Encoding": "gzip",
     "Accept": "application/json",
     "Content-Type": "application/json",
+    "Cache-Control": "no-cache",
   }
 }
 
