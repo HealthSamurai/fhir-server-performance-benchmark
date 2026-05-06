@@ -163,14 +163,16 @@ async function main() {
   const spec = v2.spec
   const variables = spec.variables || []
 
-  // Default any unpinned includeAll var to $__all, then write the pinned value
-  // back to variable.current so the snapshot renders with the right selection.
+  // Default any unpinned includeAll var to $__all, write the pinned value back
+  // to variable.current and hide all variables — the snapshot has frozen
+  // values, so the dropdowns add no value and only clutter the view.
   for (const v of variables) {
     const vs = v.spec || {}
     const name = vs.name
     if (!name) continue
     if (pinnedVars[name] === undefined && vs.includeAll) pinnedVars[name] = '$__all'
     if (pinnedVars[name] !== undefined) setVarCurrent(vs, pinnedVars[name])
+    vs.hide = 'hideVariable'
   }
 
   // Pin time range
