@@ -22,6 +22,11 @@ export function setup() {
   const bundleUrl = __ENV.BUNDLE_URL
   const baseUrl = __ENV.BASE_URL
   const params = { headers: headers(), timeout: '300s' }
+
+  // Reset tgz's rotation cursor so every server starts from bundle #0 — each
+  // FHIR impl then imports the exact same set of bundles in the same order.
+  http.post(`${bundleUrl}/reset`, null)
+
   // First - load hospital and practitioner information
   const seeds = ["hospitalInformation.json", "practitionerInformation.json"]
   seeds.forEach(x => {

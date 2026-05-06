@@ -97,6 +97,12 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.URL.Path == "/reset" {
+		state.reset()
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	state.serve(w, r)
 }
 
@@ -187,6 +193,16 @@ func (s *bundlePackage) nextFile() string {
 	s.list = s.list[1:]
 
 	return file
+}
+
+// reset rewinds the rotation cursor so the next caller starts from the first
+// bundle again. Used by import-test setup() to give every FHIR server the
+// same dataset in the same order.
+func (s *bundlePackage) reset() {
+	s.Lock()
+	defer s.Unlock()
+	s.list = s.originalList[:len(s.originalList)-1]
+	log.Println("cursor reset")
 }
 
 func (s *bundlePackage) serve(w http.ResponseWriter, r *http.Request) {
