@@ -141,7 +141,7 @@ export default function ReportPage() {
                 <iframe
                   src={`${report.grafanaSnapshot.url}?kiosk&theme=light`}
                   className="w-full"
-                  style={{ height: 800, border: 0 }}
+                  style={{ height: 700, border: 0 }}
                   title="Grafana snapshot"
                   loading="lazy"
                 />

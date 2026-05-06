@@ -9,9 +9,10 @@ export const options = {
   discardResponseBodies: true,
   scenarios: {
     import: {
-      executor: 'constant-vus',
+      executor: 'shared-iterations',
       vus: 20,
-      duration: '5m',
+      iterations: 1000,
+      maxDuration: '20m',
       gracefulStop: '30s',
     },
   },
