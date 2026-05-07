@@ -162,21 +162,23 @@ steps:
   ## GCP auth
   - printf "%s" "$DRONE_CI_GCP_SA" > /tmp/key.json
   - gcloud auth activate-service-account --key-file=/tmp/key.json
-  # Verify docker-credential-gcloud is available
   - ls -la /google-cloud-sdk/bin/docker-credential-gcloud || echo "docker-credential-gcloud not found in gcloud SDK"
   - which docker-credential-gcloud || echo "docker-credential-gcloud not in PATH"
-  # Add gcloud SDK bin to PATH if needed
   - export PATH="/google-cloud-sdk/bin:$PATH"
   - gcloud auth configure-docker us-east1-docker.pkg.dev --quiet
   - rm /tmp/key.json
 
   ## Run infra for CRUD and Import tests
   - ./runner.sh bootstrap
-  ## Prewarm
+
+  ## Tests
   - ./runner.sh -t /k6/prewarm.js
-  ## Run tests
   - ./runner.sh -t /k6/crud.js
-  - ./runner.sh -t /k6/import.js
+  - ./runner.sh -t /k6/import.js 
+    ## Force refresh PG stats
+  - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
+  - ./runner.sh -t /k6/search.js
+
   ## Cleanup
   - sleep 120
   - docker compose down -v

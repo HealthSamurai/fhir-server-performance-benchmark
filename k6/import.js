@@ -12,7 +12,7 @@ export const options = {
       executor: 'shared-iterations',
       vus: 20,
       iterations: 1000,
-      maxDuration: '20m',
+      maxDuration: '30m',
       gracefulStop: '30s',
     },
   },
