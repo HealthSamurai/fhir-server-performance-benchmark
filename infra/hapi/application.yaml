@@ -6,25 +6,9 @@ hapi:
     reuse_cached_search_results_millis: 0
 management:
   endpoints:
-    enabled-by-default: false
     web:
       exposure:
         include: 'info,health,prometheus,metrics'
-  endpoint:
-    info:
-      enabled: true
-    metrics:
-      enabled: true
-    health:
-      enabled: true
-      probes:
-        enabled: true
-      group:
-        liveness:
-          include:
-            - readinessState
-    prometheus:
-      enabled: true
   prometheus:
     metrics:
       export:
