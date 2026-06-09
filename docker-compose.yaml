@@ -160,12 +160,9 @@ services:
       OCTOFHIR__STORAGE__POSTGRES__PASSWORD: postgres
       OCTOFHIR__STORAGE__POSTGRES__DATABASE: octofhir
       OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: "32"
-      # Write the resource row + commit in the hot path; extract & write the 5
-      # partitioned search-index tables asynchronously off the write transaction.
-      # Slashes write-tx connection-hold (the throughput ceiling once terminology
-      # was fixed). Search index is eventually-consistent; reads-by-id are not
-      # affected. crud bench reads by id, so this is safe for it.
-      OCTOFHIR__SEARCH__ASYNC_INDEX_WRITES: "true"
+      # In-place JSONB search indexes built once at bootstrap — only the params
+      # this benchmark searches (Patient name + birthdate), so no needless indexes.
+      OCTOFHIR__SEARCH__INDEXED_PARAMS: "Patient.name,Patient.birthdate"
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: "true"
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: "false"
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
