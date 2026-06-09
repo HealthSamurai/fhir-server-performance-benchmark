@@ -30,32 +30,84 @@
             {
               "name": "sql",
               "valueString": "
-              CREATE INDEX IF NOT EXISTS claim_resource_idx ON Claim USING GIN (resource jsonb_path_ops);
+              
+              --- Function costs ---
+                ALTER FUNCTION knife_extract_min_timestamptz(jsonb, jsonb) COST 1000;
+                ALTER FUNCTION knife_extract_max_timestamptz(jsonb, jsonb) COST 1000;
+              ----------------
 
-              CREATE INDEX IF NOT EXISTS encounter_resource_idx ON Encounter USING GIN (resource jsonb_path_ops);
+              --- Patient ---
+                -- Generic resource index for most of searches
+                CREATE INDEX IF NOT EXISTS patient_resource_idx ON Patient USING GIN (resource jsonb_path_ops);
+                ---- Patient.birtheate
+                CREATE INDEX IF NOT EXISTS \"patient_birthdate_param_jsonpath_multirange\" ON \"patient\" USING gist (
+                  (
+                    aidbox_extract_range (
+                      \"patient\".resource,
+                      CAST(ARRAY['$.\"birthDate\"[*]'] AS _jsonpath)
+                    )
+                  ) multirange_ops
+                );
               
+                ---- Patient.name
+                CREATE INDEX IF NOT EXISTS patient_name_param_knife_string_trgm ON patient USING gin ((aidbox_text_search(knife_extract_text(resource, '[[\"name\",\"family\"],[\"name\",\"given\"],[\"name\",\"middle\"],[\"name\",\"text\"],[\"name\",\"prefix\"],[\"name\",\"suffix\"]]'))) gin_trgm_ops);
+              
+                ---- Patient.address
+                CREATE INDEX IF NOT EXISTS patient_address_param_knife_string_trgm ON patient USING gin ((aidbox_text_search(knife_extract_text(resource, '[[\"address\",\"text\"],[\"address\",\"district\"],[\"address\",\"country\"],[\"address\",\"city\"],[\"address\",\"line\"],[\"address\",\"state\"],[\"address\",\"postalCode\"]]'))) gin_trgm_ops);
+
+
+              ----------------
+
+              --- Observation ---
+                ---- Generic resource index for most of searches
+                CREATE INDEX IF NOT EXISTS observation_resource_idx ON Observation USING GIN (resource jsonb_path_ops);
+
+                ---- Observation.date
+                CREATE INDEX IF NOT EXISTS observation_date_param_jsonpath_multirange ON public.observation USING gist (
+                  aidbox_extract_range (
+                    resource,
+                    ARRAY[
+                      '$.\"effective\".\"Period\"[*]'::jsonpath,
+                      '$.\"effective\".\"dateTime\"[*]'::jsonpath,
+                      '$.\"effective\".\"instant\"[*]'::jsonpath
+                    ]
+                  )
+                );
+              ----------------
+
+              --- Encounter ---
+                -- Generic resource index for most of searches
+                CREATE INDEX IF NOT EXISTS encounter_resource_idx ON Encounter USING GIN (resource jsonb_path_ops);
+
+                ---- Encounter.date
+                CREATE INDEX IF NOT EXISTS \"encounter_date_param_jsonpath_multirange\" ON \"encounter\" USING gist (
+                  (
+                    aidbox_extract_range (
+                      \"encounter\".resource,
+                      CAST(ARRAY['$.\"period\"[*]'] AS _jsonpath)
+                    )
+                  ) multirange_ops
+                );
+              ----------------
+
               CREATE INDEX IF NOT EXISTS explanation_of_benefit_resource_idx ON ExplanationOfBenefit USING GIN (resource jsonb_path_ops);
-              
+
               CREATE INDEX IF NOT EXISTS location_resource_idx ON Location USING GIN (resource jsonb_path_ops);
-              
+
               CREATE INDEX IF NOT EXISTS medication_request_resource_idx ON MedicationRequest USING GIN (resource jsonb_path_ops);
               
-              CREATE INDEX IF NOT EXISTS observation_resource_idx ON Observation USING GIN (resource jsonb_path_ops);
               
               CREATE INDEX IF NOT EXISTS organization_resource_idx ON Organization USING GIN (resource jsonb_path_ops);
-              
-              CREATE INDEX IF NOT EXISTS patient_resource_idx ON Patient USING GIN (resource jsonb_path_ops);
-              
-              CREATE INDEX IF NOT EXISTS patient_name_param_knife_string_trgm ON patient USING gin ((aidbox_text_search(knife_extract_text(resource, '[[\"name\",\"family\"],[\"name\",\"given\"],[\"name\",\"middle\"],[\"name\",\"text\"],[\"name\",\"prefix\"],[\"name\",\"suffix\"]]'))) gin_trgm_ops);
-              
-              CREATE INDEX IF NOT EXISTS patient_name_param_knife_string ON patient USING gin ((knife_extract_text(resource, '[[\"name\",\"family\"],[\"name\",\"given\"],[\"name\",\"middle\"],[\"name\",\"text\"],[\"name\",\"prefix\"],[\"name\",\"suffix\"]]')));
-              
-              CREATE INDEX IF NOT EXISTS patient_given_param_knife_string_trgm ON patient USING gin ((aidbox_text_search(knife_extract_text(resource, '[[\"name\",\"given\"]]'))) gin_trgm_ops);
-              
-              CREATE INDEX IF NOT EXISTS patient_given_param_knife_string ON patient USING gin ((knife_extract_text(resource, '[[\"name\",\"given\"]]')));\nCREATE INDEX IF NOT EXISTS patient_birthdate_param_knife_date_min_tstz ON patient USING btree ((knife_extract_min_timestamptz(resource, '[[\"birthDate\"]]')));
-              
-              CREATE INDEX IF NOT EXISTS patient_birthdate_param_knife_date_max_tstz ON patient USING btree ((knife_extract_max_timestamptz(resource, '[[\"birthDate\"]]')));
-              
+
+              --- Organization ---
+                ---- Organization.name
+                CREATE INDEX IF NOT EXISTS organization_name_param_knife_string_trgm ON organization USING gin ((aidbox_text_search(knife_extract_text(resource, '[[\"name\"],[\"alias\"]]'))) gin_trgm_ops);
+              ----------------
+
+              --- Claim ---
+              CREATE INDEX IF NOT EXISTS claim_resource_idx ON Claim USING GIN (resource jsonb_path_ops);
+
+              --- Practitioner ---
               CREATE INDEX IF NOT EXISTS practitioner_resource_idx ON Practitioner USING GIN (resource jsonb_path_ops);"
             }
           ]

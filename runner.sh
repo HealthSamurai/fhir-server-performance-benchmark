@@ -41,8 +41,6 @@ show_usage() {
     echo "  /k6/crud.js"
     echo "  /k6/search.js"
     echo "  /k6/import.js"
-    echo "  /k6/import-seed.js"
-    echo "  /k6/auth.js"
 }
 
 # Function to bootstrap Docker Compose services with retry logic
