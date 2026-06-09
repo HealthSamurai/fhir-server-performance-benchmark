@@ -10,7 +10,7 @@ set -e
 
 # Default values
 DEFAULT_TEST="/k6/prewarm.js"
-ALL_SERVERS="aidbox hapi medplum octofhir"
+ALL_SERVERS="octofhir aidbox hapi medplum"
 
 # Function to display usage
 show_usage() {
