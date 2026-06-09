@@ -162,6 +162,7 @@ services:
       OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: "32"
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: "true"
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: "false"
+      OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
       OCTOFHIR__AUDIT__ENABLED: "false"
       OCTOFHIR__LOGGING__LEVEL: "info"
       RUST_LOG: "info"
