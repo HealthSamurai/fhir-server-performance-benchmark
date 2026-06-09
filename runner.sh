@@ -52,7 +52,7 @@ bootstrap_services() {
 
     echo "Pulling docker images..."
     echo "================================================"
-    docker compose $COMPOSE_FILES pull aidbox hapi medplum
+    docker compose $COMPOSE_FILES pull aidbox hapi medplum octofhir
 
     echo "Starting Docker Compose services  (max $max_attempts attempts)..."
     echo "================================================"

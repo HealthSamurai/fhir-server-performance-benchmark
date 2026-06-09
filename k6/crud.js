@@ -19,8 +19,8 @@ export const options = {
   scenarios: {
     crud: {
       executor: 'constant-vus',
-      vus: 300,
-      duration: '5m',
+      vus: Number(__ENV.VUS) || 300,
+      duration: __ENV.DURATION || '5m',
       gracefulStop: '30s',
     },
   },
