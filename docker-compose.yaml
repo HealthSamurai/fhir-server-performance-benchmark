@@ -162,9 +162,11 @@ services:
       OCTOFHIR__STORAGE__POSTGRES__PASSWORD: postgres
       OCTOFHIR__STORAGE__POSTGRES__DATABASE: octofhir
       OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: "32"
-      # In-place JSONB search indexes built once at bootstrap — only the params
-      # this benchmark searches (Patient name + birthdate), so no needless indexes.
-      OCTOFHIR__SEARCH__INDEXED_PARAMS: "Patient.name,Patient.birthdate"
+      # In-place JSONB search indexes built once at bootstrap — covers every
+      # search param the k6 search suite exercises (k6/search/searchConfig.js):
+      # string: Patient.name/address, Organization.name; date: Patient.birthdate,
+      # Observation.date, Encounter.date; token: Observation.category.
+      OCTOFHIR__SEARCH__INDEXED_PARAMS: "Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category"
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: "true"
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: "false"
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
