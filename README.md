@@ -51,4 +51,3 @@ Validation
 
 - [ ] Schema validation
 - [ ] Terminology validation
-- [ ] another
