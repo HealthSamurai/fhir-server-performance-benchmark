@@ -4,7 +4,6 @@
 
 [Reports](https://healthsamurai.github.io/fhir-server-performance-benchmark)
 
-
 ## FHIR Server
 
 - Aidbox
@@ -29,7 +28,6 @@ Open [http://localhost:13080](http://localhost:13080) and activate Aidbox.
 | Grafana    | [http://localhost:13000](http://localhost:13000) | [http://grafana:3000](http://grafana:3000) |
 | Prometheus | [http://localhost:13010](http://localhost:13010) | [http://prometheus:9090](http://prometheus:9090) |
 
-
 ## Coverage
 
 CRUD
@@ -53,5 +51,3 @@ Validation
 
 - [ ] Schema validation
 - [ ] Terminology validation
-
-
