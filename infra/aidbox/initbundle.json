@@ -17,11 +17,11 @@
       "request": {
         "method": "POST",
         "url": "AidboxMigration",
-        "ifNoneExist": "id=perf-indexes"
+        "ifNoneExist": "id=perf-indexes-1"
       },
       "resource": {
         "resourceType": "AidboxMigration",
-        "id": "perf-indexes",
+        "id": "perf-indexes-1",
         "action": "aidbox-migration-run-sql",
         "status": "to-run",
         "params": {
@@ -30,11 +30,6 @@
             {
               "name": "sql",
               "valueString": "
-              
-              --- Function costs ---
-                ALTER FUNCTION knife_extract_min_timestamptz(jsonb, jsonb) COST 1000;
-                ALTER FUNCTION knife_extract_max_timestamptz(jsonb, jsonb) COST 1000;
-              ----------------
 
               --- Patient ---
                 -- Generic resource index for most of searches
@@ -72,6 +67,44 @@
                       '$.\"effective\".\"instant\"[*]'::jsonpath
                     ]
                   )
+                );
+
+                ---- Observation.value-quantity (top-level valueQuantity)
+                CREATE INDEX IF NOT EXISTS observation_value_quantity_max_idx ON observation USING btree (
+                  (knife_extract_max_numeric(resource, '[[\"value\",\"Quantity\",\"value\"],[\"value\",\"SampledData\"]]'::jsonb))
+                );
+                CREATE INDEX IF NOT EXISTS observation_value_quantity_min_idx ON observation USING btree (
+                  (knife_extract_min_numeric(resource, '[[\"value\",\"Quantity\",\"value\"],[\"value\",\"SampledData\"]]'::jsonb))
+                );
+
+                CREATE INDEX IF NOT EXISTS observation_value_quantity_min_max_idx ON observation USING btree (
+                  (knife_extract_min_numeric(resource, '[[\"value\",\"Quantity\",\"value\"],[\"value\",\"SampledData\"]]'::jsonb)),
+                  (knife_extract_max_numeric(resource, '[[\"value\",\"Quantity\",\"value\"],[\"value\",\"SampledData\"]]'::jsonb))
+                );
+
+                ---- Observation.component-value-quantity
+                CREATE INDEX IF NOT EXISTS observation_component_value_quantity_max_idx ON observation USING btree (
+                  (knife_extract_max_numeric(resource, '[[\"component\",\"value\",\"Quantity\",\"value\"],[\"component\",\"value\",\"SampledData\"]]'::jsonb))
+                );
+                CREATE INDEX IF NOT EXISTS observation_component_value_quantity_min_idx ON observation USING btree (
+                  (knife_extract_min_numeric(resource, '[[\"component\",\"value\",\"Quantity\",\"value\"],[\"component\",\"value\",\"SampledData\"]]'::jsonb))
+                );
+
+                CREATE INDEX IF NOT EXISTS observation_component_value_quantity_composite_max_idx ON observation USING btree (
+                  (jsonpath_extract_max_numeric ( resource, '$.\"component\".\"value\".\"Quantity\"[*].\"value\"') )
+                );
+
+                CREATE INDEX IF NOT EXISTS observation_component_value_quantity_composite_max_idx_pt ON observation USING btree (
+                  (jsonpath_extract_max_numeric ( resource, '$.\"component\".\"value\".\"Quantity\"[*].\"value\"') )
+                ) where resource @> '{\"code\":{\"coding\":[{\"code\":\"8867-4\"}]}}' ;
+
+
+                ---- Observation.combo-value-quantity (top-level OR component)
+                CREATE INDEX IF NOT EXISTS observation_combo_value_quantity_max_idx ON observation USING btree (
+                  (knife_extract_max_numeric(resource, '[[\"value\",\"Quantity\",\"value\"],[\"value\",\"SampledData\"],[\"component\",\"value\",\"Quantity\",\"value\"],[\"component\",\"value\",\"SampledData\"]]'::jsonb))
+                );
+                CREATE INDEX IF NOT EXISTS observation_combo_value_quantity_min_idx ON observation USING btree (
+                  (knife_extract_min_numeric(resource, '[[\"value\",\"Quantity\",\"value\"],[\"value\",\"SampledData\"],[\"component\",\"value\",\"Quantity\",\"value\"],[\"component\",\"value\",\"SampledData\"]]'::jsonb))
                 );
               ----------------
 
