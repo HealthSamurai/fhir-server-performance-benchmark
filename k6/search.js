@@ -1,57 +1,68 @@
 import { group } from 'k6'
-import { is200, headers } from './util.js'
+import searchSet from './search/searchConfig.js'  
+import {escapeFhirValue, pickRand, is200, isOk, headers } from './util.js'
 
 export const options = {
   discardResponseBodies: true,
   scenarios: {
     search: {
+
       executor: 'constant-vus',
-      vus: 10,
-      duration: '5m',
+      vus: 30,
+      duration: '2m',
       gracefulStop: '30s',
+
+      // executor: 'shared-iterations',
+      // vus: 10,
+      // iterations: 1000,
+      // maxDuration: '2m',
     },
   },
 }
 
+const COUNT = 20
+
 export function setup() {
   return {
     baseUrl: __ENV.BASE_URL,
-    params: { headers: headers() },
+    params: { headers: headers(), timeout: '300s' },
+    searchSet
   }
 }
 
-function searchTest(baseUrl, resourceType, query, params) {
-  group(resourceType, () => {
-    is200(`${baseUrl}/${resourceType}?${query}`, params)
-  })
+
+function genRandSearchParamQuery(name, searchConfig) {
+  const value = pickRand(searchConfig.values);
+  const modifier = searchConfig.modifiers ? pickRand(searchConfig.modifiers) : '';
+  const prefix = searchConfig.prefixes ? pickRand(searchConfig.prefixes) : '';
+  return `${name}${modifier}=${prefix}${encodeURIComponent(escapeFhirValue(value))}`;
 }
 
-const count = 100
+function testSingleSearchType(searchType, baseUrl, params, searchSet) {
 
-export default function({ baseUrl, params }) {
-  group('text', () => {
-    searchTest(baseUrl, 'Patient', `name=John&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `name=Undefined&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `name=Some_long_unexisting_string&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `name:contains=ohn&_count=${count}`, params)
+  group(searchType, () => {
+    const searchTypeGroup = searchSet[searchType]
+    for (const resourceType of Object.keys(searchTypeGroup)) {
+      group(resourceType, () => {
+      const searchTypeParameters = searchTypeGroup[resourceType]
+        for (const name of Object.keys(searchTypeParameters)) {
+          group(name, () => {
+            const currentParamaterConfig = searchTypeParameters[name]
+            const query = genRandSearchParamQuery(name, currentParamaterConfig)
+            const searchRequest = `${baseUrl}/${resourceType}?${query}&_count=${COUNT}`
+            // console.log(searchRequest);
+            const reqParams = { ...params, tags: { name, resourceType , searchType } }
+            isOk(`${resourceType}?${name}`, searchRequest, reqParams)
+          })
+        }
+      })
+    }
   })
-  group('date', () => {
-    searchTest(baseUrl, 'Patient', `birthdate=2007-03-07&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `birthdate=eq2007-03-07&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `birthdate=ne2007-03-07&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `birthdate=lt2007-03-07&_count=${count}`, params)
-    searchTest(baseUrl, 'Patient', `birthdate=gt2007-03-07&_count=${count}`, params)
-  })
-  // group('token', () => {
-  //   searchTest(baseUrl, 'Observation', `code=29463-7&_count=${count}`, params)
-  //   searchTest(baseUrl, 'Observation', `code=http://loinc.org|29463-7&_count=${count}`, params)
-  //   searchTest(baseUrl, 'Observation', `code=|29463-7&_count=${count}`, params)
-  //   searchTest(baseUrl, 'Observation', `code=http://loinc.org|&_count=${count}`, params)
-  // })
-  // group('reference', () => {
-  //   searchTest(baseUrl, 'Observation', `patient=184cf049-bb4e-91c1-0a44-41c9512eee0c&_count=${count}`, params)
-  // })
-  // group('parameters', () => {
-  //   searchTest(baseUrl, 'Patient', `_id=184cf049-bb4e-91c1-0a44-41c9512eee0c&_revinclude=Observation:patient&_count=${count}`, params)
-  // })
+
+}
+
+export default function ({ baseUrl, params, queries }) {
+  for(const searchType of Object.keys(searchSet)) {
+    testSingleSearchType(searchType, baseUrl, params, searchSet)
+  }
 }

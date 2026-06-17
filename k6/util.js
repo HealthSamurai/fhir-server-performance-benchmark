@@ -10,9 +10,23 @@ export function jsonPatch(obj, path, value) {
   return obj;
 }
 
+function escapeFhirValue(v) {
+  return String(v).replace(/([\\,$|])/g, '\\$1');
+}
+
+
+export function pickRand(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 export function is200 (url, params) {
   const res = http.get(url, params)
   return check(res, {'Status 200': ({ status }) => status === 200})
+}
+
+export function isOk (name, url, params) {
+  const res = http.get(url, params)
+  return check(res, { [name]: ({ status }) => status === 200 })
 }
 
 const oauth2 = () => {
