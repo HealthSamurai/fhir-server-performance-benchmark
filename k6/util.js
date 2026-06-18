@@ -10,7 +10,7 @@ export function jsonPatch(obj, path, value) {
   return obj;
 }
 
-function escapeFhirValue(v) {
+export function escapeFhirValue(v) {
   return String(v).replace(/([\\,$|])/g, '\\$1');
 }
 
