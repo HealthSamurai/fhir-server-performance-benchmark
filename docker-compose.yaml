@@ -152,6 +152,10 @@ services:
           cpus: '8'
           memory: 20G
     environment:
+      # Match tokio worker threads to the container CPU quota (deploy.limits.cpus).
+      # Docker `cpus:` is a CFS quota, not a cpuset — tokio's default (num host
+      # cores) would oversubscribe and add context-switch overhead.
+      TOKIO_WORKER_THREADS: "8"
       OCTOFHIR__SERVER__HOST: "0.0.0.0"
       OCTOFHIR__SERVER__PORT: "8888"
       OCTOFHIR__SERVER__BASE_URL: "http://octofhir:8888"
