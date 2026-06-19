@@ -1,6 +1,6 @@
 import { group } from 'k6'
 import searchSet from './search/searchConfig.js'  
-import {pickRand, is200, isOk, headers } from './util.js'
+import {escapeFhirValue, pickRand, is200, isOk, headers } from './util.js'
 
 export const options = {
   discardResponseBodies: true,
@@ -25,16 +25,11 @@ const COUNT = 20
 export function setup() {
   return {
     baseUrl: __ENV.BASE_URL,
-    params: { headers: headers() },
+    params: { headers: headers(), timeout: '300s' },
     searchSet
   }
 }
 
-// Escape FHIR-special chars in a single value: , $ | (per FHIR search spec
-// these are list/composite/token separators); also escape backslash itself.
-function escapeFhirValue(v) {
-  return String(v).replace(/([\\,$|])/g, '\\$1');
-}
 
 function genRandSearchParamQuery(name, searchConfig) {
   const value = pickRand(searchConfig.values);

@@ -22,7 +22,7 @@ export function setup() {
 
   const bundleUrl = __ENV.BUNDLE_URL
   const baseUrl = __ENV.BASE_URL
-  const params = { headers: headers(), timeout: '300s' }
+  const params = { headers: headers(), timeout: '500s' }
 
   // Reset tgz's rotation cursor so every server starts from bundle #0 — each
   // FHIR impl then imports the exact same set of bundles in the same order.

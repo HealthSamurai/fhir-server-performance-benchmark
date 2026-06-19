@@ -10,6 +10,9 @@ export function jsonPatch(obj, path, value) {
   return obj;
 }
 
+export function escapeFhirValue(v) {
+  return String(v).replace(/([\\,$|])/g, '\\$1');
+}
 
 export function pickRand(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
