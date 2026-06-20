@@ -9,6 +9,7 @@
 - Aidbox
 - Hapi
 - Medplum
+- Awesome
 
 ## Local development
 
