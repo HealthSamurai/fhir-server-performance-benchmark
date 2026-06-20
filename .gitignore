@@ -49,3 +49,5 @@ yarn-error.log*
 next-env.d.ts
 
 docker-compose.override.yaml
+
+.fhir

@@ -6,17 +6,16 @@ volumes:
   tgzdata:
 
 services:
-
-## ------------------------------------------------
-## Postgres 
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## Postgres
+  ## ------------------------------------------------
   postgres:
     container_name: perf-postgres
     image: postgres:18
     pull_policy: always
     command: postgres -c config_file=/postgres.conf
     ports:
-      - "13020:5432"
+      - '13020:5432'
     deploy:
       resources:
         limits:
@@ -35,13 +34,13 @@ services:
       - ./infra/postgres/init:/docker-entrypoint-initdb.d
       - ./infra/postgres/postgres.conf:/postgres.conf
 
-## ------------------------------------------------
-## FHIR Servers
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## FHIR Servers
+  ## ------------------------------------------------
 
-## ------------------------------------------------
-## Aidbox 
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## Aidbox
+  ## ------------------------------------------------
   aidbox:
     container_name: perf-aidbox
     image: healthsamurai/aidboxone:edge
@@ -57,7 +56,7 @@ services:
     volumes:
       - ./infra/aidbox/initbundle.json:/tmp/initbundle.json
     environment:
-      JAVA_OPTS: "-XX:MaxRAMPercentage=80 -XshowSettings:vm"
+      JAVA_OPTS: '-XX:MaxRAMPercentage=80 -XshowSettings:vm'
       BOX_ADMIN_PASSWORD: secret
       BOX_CACHE_REPLICATION_DISABLE: true
       BOX_BOOTSTRAP_FHIR_PACKAGES: hl7.fhir.r4.core#4.0.1
@@ -92,11 +91,11 @@ services:
       start_period: 30s
       retries: 10
     ports:
-      - "13080:8080"
+      - '13080:8080'
 
-## ------------------------------------------------
-## HAPI FHIR
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## HAPI FHIR
+  ## ------------------------------------------------
   hapi:
     container_name: perf-hapi
     image: hapiproject/hapi:latest
@@ -118,14 +117,14 @@ services:
           cpus: '8'
           memory: 24G
     ports:
-      - "13090:8080"
+      - '13090:8080'
     volumes:
       - ./infra/hapi/application.yaml:/app/config/application.yaml:ro
 
   hapi-checker:
     container_name: perf-hapi-hc
     image: curlimages/curl
-    command: ["-c", "trap : TERM INT; sleep infinity & wait"]
+    command: ['-c', 'trap : TERM INT; sleep infinity & wait']
     depends_on:
       hapi:
         condition: service_started
@@ -136,9 +135,9 @@ services:
       start_period: 30s
       retries: 10
 
-## ------------------------------------------------
-## OctoFHIR
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## OctoFHIR
+  ## ------------------------------------------------
   octofhir:
     container_name: perf-octofhir
     image: ghcr.io/octofhir/octofhir-server:latest
@@ -152,42 +151,39 @@ services:
           cpus: '8'
           memory: 20G
     environment:
-      # Match tokio worker threads to the container CPU quota (deploy.limits.cpus).
-      # Docker `cpus:` is a CFS quota, not a cpuset — tokio's default (num host
-      # cores) would oversubscribe and add context-switch overhead.
-      TOKIO_WORKER_THREADS: "8"
-      OCTOFHIR__SERVER__HOST: "0.0.0.0"
-      OCTOFHIR__SERVER__PORT: "8888"
-      OCTOFHIR__SERVER__BASE_URL: "http://octofhir:8888"
-      OCTOFHIR__SERVER__BODY_LIMIT_BYTES: "104857600"
+      OCTOFHIR__SERVER__HOST: '0.0.0.0'
+      OCTOFHIR__SERVER__PORT: '8888'
+      OCTOFHIR__SERVER__BASE_URL: 'http://octofhir:8888'
+      OCTOFHIR__SERVER__BODY_LIMIT_BYTES: '104857600'
       OCTOFHIR__STORAGE__POSTGRES__HOST: postgres
-      OCTOFHIR__STORAGE__POSTGRES__PORT: "5432"
+      OCTOFHIR__STORAGE__POSTGRES__PORT: '5432'
       OCTOFHIR__STORAGE__POSTGRES__USER: postgres
       OCTOFHIR__STORAGE__POSTGRES__PASSWORD: postgres
       OCTOFHIR__STORAGE__POSTGRES__DATABASE: octofhir
-      OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: "32"
+      OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: '32'
       # In-place JSONB search indexes built once at bootstrap — covers every
       # search param the k6 search suite exercises (k6/search/searchConfig.js):
       # string: Patient.name/address, Organization.name; date: Patient.birthdate,
       # Observation.date, Encounter.date; token: Observation.category.
-      OCTOFHIR__SEARCH__INDEXED_PARAMS: "Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category"
-      OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: "true"
-      OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: "false"
+      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category'
+      OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: 'true'
+      OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: 'false'
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
-      OCTOFHIR__AUDIT__ENABLED: "false"
-      OCTOFHIR__LOGGING__LEVEL: "info"
-      RUST_LOG: "info"
+      OCTOFHIR__AUDIT__ENABLED: 'false'
+      OCTOFHIR__LOGGING__LEVEL: 'info'
+      RUST_LOG: 'info'
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://localhost:8888/healthz || exit 1"]
+      test:
+        ['CMD-SHELL', 'wget -q -O - http://localhost:8888/healthz || exit 1']
       interval: 10s
       start_period: 60s
       retries: 30
     ports:
-      - "13100:8888"
+      - '13100:8888'
 
-## ------------------------------------------------
-## Medplum
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## Medplum
+  ## ------------------------------------------------
   medplum:
     image: medplum/medplum-server:latest
     pull_policy: always
@@ -209,9 +205,9 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           'fetch("http://localhost:8103/healthcheck").then(r => r.json()).then(console.log).catch(() => { process.exit(1); })',
         ]
       interval: 10s
@@ -223,15 +219,15 @@ services:
     image: redis:latest
     pull_policy: always
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       start_period: 10s
       timeout: 5s
       retries: 5
 
-## ------------------------------------------------
-## K6 test runner and tgz service fo import tests
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## K6 test runner and tgz service fo import tests
+  ## ------------------------------------------------
   k6:
     container_name: perf-k6
     image: grafana/k6
@@ -256,14 +252,14 @@ services:
     build:
       context: infra/tgz
     command:
-      - "https://storage.googleapis.com/aidbox-public/synthea/performance/bulk_1k.tar.gz"
+      - 'https://storage.googleapis.com/aidbox-public/synthea/performance/bulk_1k.tar.gz'
     volumes:
       - tgzdata:/data
     working_dir: /data
 
-## ------------------------------------------------
-## Monitoring stack
-## ------------------------------------------------
+  ## ------------------------------------------------
+  ## Monitoring stack
+  ## ------------------------------------------------
   prometheus:
     container_name: perf-prometheus
     image: prom/prometheus
@@ -278,7 +274,7 @@ services:
       interval: 5s
       start_period: 5s
     ports:
-      - "13010:9090"
+      - '13010:9090'
     volumes:
       - promdata:/prometheus
       - ./infra/prometheus/config.yaml:/etc/prometheus/prometheus.yml
@@ -292,13 +288,13 @@ services:
       GF_AUTH_ANONYMOUS_ENABLED: true
       GF_AUTH_BASIC_ENABLED: true
       GF_SECURITY_ADMIN_PASSWORD: admin
-      
+
     healthcheck:
       test: curl http://localhost:3000/api/health
       interval: 5s
       start_period: 30s
     ports:
-      - "13000:3000"
+      - '13000:3000'
     volumes:
       - ./infra/grafana:/etc/grafana/provisioning:ro
 
