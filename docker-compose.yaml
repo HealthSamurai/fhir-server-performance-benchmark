@@ -162,10 +162,14 @@ services:
       OCTOFHIR__STORAGE__POSTGRES__DATABASE: octofhir
       OCTOFHIR__STORAGE__POSTGRES__POOL_SIZE: '32'
       # In-place JSONB search indexes built once at bootstrap — covers every
-      # search param the k6 search suite exercises (k6/search/searchConfig.js):
+      # search param the k6 search suite exercises (k6/searchConfig.js):
       # string: Patient.name/address, Organization.name; date: Patient.birthdate,
-      # Observation.date, Encounter.date; token: Observation.category.
-      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category'
+      # Observation.date, Encounter.date; token: Observation.category/code;
+      # quantity: Observation.value-quantity (btree on numeric value);
+      # reference: Observation.subject/encounter/performer, Encounter.subject/
+      # participant, MedicationRequest.subject/encounter/requester (GIN over
+      # fhir_extract_text refs). Composite params are not yet index-matched.
+      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category,Observation.code,Observation.value-quantity,Observation.subject,Observation.encounter,Observation.performer,Encounter.subject,Encounter.participant,MedicationRequest.subject,MedicationRequest.encounter,MedicationRequest.requester'
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: 'true'
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: 'false'
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
