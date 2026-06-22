@@ -244,8 +244,12 @@ async function main() {
     const converter = await loadConverter()
     
     if (converter) {
+      // RUNID is the run start time (set in the CI configure step); ENDTIME is
+      // captured right after the tests finish. Pass both so the report carries a
+      // real runid/start/end/duration instead of a generated placeholder.
+      const endTime = process.env.ENDTIME || process.env.END_TIME || null
       // Convert and save the report
-      const report = converter.convertSourceData(snapshot)
+      const report = converter.convertSourceData(snapshot, params.runId, params.runId, endTime)
       const reportPath = path.join(params.outputDir, `SNAPSHOT_${params.runId}.json`)
       await fs.writeFile(reportPath, JSON.stringify(report, null, 2))
       console.log(`Benchmark report saved to: ${reportPath}`)

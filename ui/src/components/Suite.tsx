@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card"
 import { BenchmarkSuite } from "@/types/benchmark.types"
 import { ReportBarChart } from "@/components/BarChart"
+import { ChevronDown } from "lucide-react"
 
 // Helper function to calculate average metrics from test case data
 function calculateAverageMetrics(testCase: any) {
@@ -27,6 +28,9 @@ function calculateAverageMetrics(testCase: any) {
 
 export function Suite({ suite }: { suite: BenchmarkSuite }) {
   const [expandedCards, setExpandedCards] = useState<{ [key: number]: boolean }>({})
+
+  const toggleCard = (index: number) =>
+    setExpandedCards((prev) => ({ ...prev, [index]: !prev[index] }))
 
   // Don't render if test_cases is empty
   if (!suite.test_cases || suite.test_cases.length === 0) {
@@ -77,22 +81,42 @@ export function Suite({ suite }: { suite: BenchmarkSuite }) {
 
 
       {suite.test_cases.length > 1 &&
-          suite.test_cases.map((testCase, index) => (
+          suite.test_cases.map((testCase, index) => {
+            const expanded = !!expandedCards[index]
+            return (
             <div key={index} className="mt-12">
-              <div className="cursor-pointer hover:bg-gray-50 transition-colors mb-4 border-y px-6 py-4 border-gray-200" >
-                <div className="flex justify-between items-center">
+              <div className="mb-4 border-y px-6 py-4 border-gray-200" >
+                <div className="flex justify-between items-center gap-4">
                   <div>
                     <h3 className="text-lg font-medium text-gray-900">Test Case: {testCase.label}</h3>
                     <div className="text-sm text-gray-600">{testCase.description}</div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => toggleCard(index)}
+                    aria-expanded={expanded}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer shrink-0"
+                  >
+                    Details
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
+                    />
+                  </button>
                 </div>
               </div>
               <CardContent>
                 <ReportBarChart result={calculateAverageMetrics(testCase)} size="small" />
-                <ReportBarChart result={testCase} size="big" />
+                {expanded && (
+                  <div className="mt-4 border-t border-gray-200 pt-4">
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                      Details by resource type
+                    </div>
+                    <ReportBarChart result={testCase} size="big" />
+                  </div>
+                )}
               </CardContent>
             </div>
-          ))
+          )})
       }
 
       </Card>

@@ -82,43 +82,6 @@ export function ReportSummary({ report }: { report: BenchmarkReport }) {
   const stats = calculateServerStats(report.suites)
 
   return (
-    <Card className="w-full">
-      <CardHeader className="border-b">
-        <CardTitle>Performance Summary</CardTitle>
-        <CardDescription>Overall performance comparison across all test suites</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-3 gap-8 pb-6">
-          {Object.entries(stats).map(([server, data]) => (
-            <div key={server} className="flex flex-col items-center">
-              <div className="relative w-16 h-16 mb-4">
-                <Image
-                  src={serverIcons[server as keyof typeof serverIcons]}
-                  alt={`${server} icon`}
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <h3 className="text-lg font-semibold capitalize mb-4">{server}</h3>
-              <div className="space-y-2 w-full">
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600">Avg RPS:</span>
-                  <span className="font-medium">{data.avgRps.toLocaleString()}</span>
-                </div> */}
-                <div className="flex justify-between max-w-48 mx-auto">
-                  <span className="text-gray-600">Best in:</span>
-                  <span className="font-medium">{data.wins} tests</span>
-                </div>
-                {/* <div className="flex justify-between">
-                  <span className="text-gray-600">Consistency:</span>
-                  <span className="text-orange-500 font-medium">Medium</span>
-                </div> */}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div></div>
   )
 } 

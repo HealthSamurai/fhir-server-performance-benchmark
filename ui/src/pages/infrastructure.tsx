@@ -1,8 +1,8 @@
 import React from "react";
 import Link from "next/link";
 import type { GetStaticProps } from "next";
-import { Github } from "lucide-react";
 import { InfraDiagram } from "@/components/InfraDiagram";
+import { Header } from "@/components/Header";
 import { loadInfraSnippets, type NodeInfo } from "@/lib/infra-snippets";
 
 interface InfrastructureProps {
@@ -16,36 +16,7 @@ export const getStaticProps: GetStaticProps<InfrastructureProps> = async () => {
 export default function Infrastructure({ snippets }: InfrastructureProps) {
   return (
     <div>
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <Link
-                href="/infrastructure"
-                className="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Infrastructure
-              </Link>
-              <Link
-                href="/tests"
-                className="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Tests
-              </Link>
-            </div>
-            <a
-              href="https://github.com/HealthSamurai/fhir-server-performance-benchmark"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
-              title="View source on GitHub (new tab)"
-            >
-              <Github className="w-5 h-5" />
-              <span>GitHub</span>
-            </a>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         <div>

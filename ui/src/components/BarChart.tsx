@@ -20,16 +20,33 @@ const chartConfig = {
 
 
 
-export function ReportBarChart({ result, size }: { result: BenchmarkResult, size: "small" | "big" }) {
-    let className = "w-full"
-    if (size === "small") {
-        className = `h-[120px] ${className}`
-    } else {
-        className = `min-h-[400px] ${className}`
+// Order the server series best-first. Direction follows the metric: for latency
+// (ms/s) lower is better, otherwise (rps) higher is better. Bars with several
+// categories are ranked by their mean value across all of them, so the ordering
+// stays consistent for the whole chart.
+function orderedServerKeys(result: BenchmarkResult): string[] {
+    const keys = Object.keys(chartConfig)
+    const lowerBetter = ["ms", "s"].includes(result.unit.toLowerCase())
+    const score = (key: string) => {
+        const data = result.data
+        if (!data.length) return 0
+        return data.reduce((sum, dp: any) => sum + (dp[key] || 0), 0) / data.length
     }
+    return [...keys].sort((a, b) => (lowerBetter ? score(a) - score(b) : score(b) - score(a)))
+}
+
+export function ReportBarChart({ result, size }: { result: BenchmarkResult, size: "small" | "big" }) {
+    const serverKeys = orderedServerKeys(result)
+
+    // For the detailed chart size to its content: ~64px per category group plus
+    // room for the legend/axis. Avoids one lonely bar floating in a fixed-height
+    // box when a test case has a single resource type.
+    const rowCount = Math.max(result.data.length, 1)
+    const className = size === "small" ? "h-[120px] w-full" : "aspect-auto w-full"
+    const style = size === "small" ? undefined : { height: rowCount * 64 + 80 }
 
     return (
-        <ChartContainer config={chartConfig} className={className}>
+        <ChartContainer config={chartConfig} className={className} style={style}>
             <BarChart
                 accessibilityLayer
                 data={result.data}
@@ -54,7 +71,7 @@ export function ReportBarChart({ result, size }: { result: BenchmarkResult, size
                 />
                 <ChartLegend content={<ChartLegendContent />} />
 
-                {Object.entries(chartConfig).map(([key]) => (
+                {serverKeys.map((key) => (
                     <Bar
                         key={key}
                         dataKey={key}
