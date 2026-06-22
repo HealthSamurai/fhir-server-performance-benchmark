@@ -233,12 +233,15 @@ export function calculateDuration(startTime, endTime) {
     return end - start;
 }
 
-// Convenience function to convert with auto-generated metadata
-export function convertSourceData(sourceData) {
-    const runId = generateRunId();
-    const startTime = runId;
-    const endTime = new Date(new Date(runId).getTime() + 600000).toISOString(); // 10 minutes later
-    const duration = calculateDuration(startTime, endTime);
+// Convenience function to convert with provided (or auto-generated) metadata.
+// runId/startTime/endTime come from CI; only fall back to a generated runId when
+// nothing is supplied. Duration is computed from real times — 0 if end is unknown
+// (better than a fabricated value).
+export function convertSourceData(sourceData, runId, startTime, endTime) {
+    const rid = runId || generateRunId();
+    const start = startTime || rid;
+    const end = endTime || null;
+    const duration = end ? calculateDuration(start, end) : 0;
 
-    return convertSourceToBenchmarkReport(sourceData, runId, startTime, endTime, duration);
+    return convertSourceToBenchmarkReport(sourceData, rid, start, end || start, duration);
 }

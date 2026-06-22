@@ -2,10 +2,74 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Github } from "lucide-react";
+import { ChevronLeft, ChevronRight, Server, Activity, ArrowRight } from "lucide-react";
 import { BranchSelector } from "@/components/BranchSelector";
+import { Header } from "@/components/Header";
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
+
+const SERVERS: { key: "aidbox" | "medplum" | "hapi"; label: string }[] = [
+  { key: "aidbox", label: "Aidbox" },
+  { key: "medplum", label: "Medplum" },
+  { key: "hapi", label: "HAPI" },
+];
+
+interface SuiteRow {
+  label: string;
+  unit: string; // "ms" | "rps" | ...
+  lowerBetter: boolean;
+  values: { aidbox: number; medplum: number; hapi: number };
+}
+
+interface RunSummaryData {
+  rows: SuiteRow[];
+}
+
+type SummaryState = RunSummaryData | "loading" | "error";
+
+// Trim noise from suite names so they fit a compact column ("FHIR Search" -> "Search").
+function shortSuiteLabel(name: string): string {
+  return String(name || "").replace(/^FHIR\s+/i, "").trim();
+}
+
+// RPS spans whole-number throughput (thousands) and fractional import rates,
+// so keep one decimal for small values and group thousands for large ones.
+function formatRps(v: number): string {
+  return v < 10 && !Number.isInteger(v)
+    ? v.toFixed(2)
+    : Math.round(v).toLocaleString();
+}
+
+function computeSummary(report: any): RunSummaryData {
+  const servers: ("aidbox" | "medplum" | "hapi")[] = ["aidbox", "medplum", "hapi"];
+
+  // Each suite carries the real measured throughput in result.data (the "Total"
+  // RPS per server) — no need to derive anything from latency.
+  const rows: SuiteRow[] = (report?.suites || []).map((suite: any) => {
+    // Import is throughput of imported *resources*, not HTTP requests: result.data
+    // holds requests/sec (~3.5), while the test case holds resources/sec (~2779).
+    const isImport = String(suite?.name || "").toLowerCase().includes("import");
+
+    const total = isImport
+      ? (suite?.test_cases?.[0]?.data?.[0] || {})
+      : ((suite?.result?.data || []).find((d: any) => d.category === "Total")
+          || suite?.result?.data?.[0]
+          || {});
+
+    return {
+      label: shortSuiteLabel(suite?.name),
+      unit: isImport ? "res/s" : "rps",
+      lowerBetter: false,
+      values: {
+        aidbox: total.aidbox || 0,
+        medplum: total.medplum || 0,
+        hapi: total.hapi || 0,
+      },
+    };
+  });
+
+  return { rows };
+}
 
 export default function Home() {
   const [branch, setBranch] = useState<string>("main");
@@ -14,6 +78,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [summaries, setSummaries] = useState<Record<string, SummaryState>>({});
 
   // Read ?branch= once on mount and fetch with that exact value. Doing this
   // in a single pass avoids a double-render race where the initial main fetch
@@ -64,6 +129,7 @@ export default function Home() {
     try {
       setLoading(true);
       setError(null);
+      setSummaries({});
 
       // GCS public bucket URL for listing objects
       const bucketUrl = 'https://storage.googleapis.com/storage/v1/b/samurai-public/o';
@@ -114,6 +180,42 @@ export default function Home() {
     }
   };
 
+  const fetchSummary = async (runId: string, branchName: string) => {
+    setSummaries((prev) => ({ ...prev, [runId]: "loading" }));
+    try {
+      const basePath = branchName === "main"
+        ? "fhir-server-performance-benchmark"
+        : `fhir-server-performance-benchmark/${branchName}`;
+      const url = `https://storage.googleapis.com/samurai-public/${basePath}/SNAPSHOT_${runId}.json`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        // Report file may not exist (e.g. listing/object mismatch) — treat as a
+        // missing summary rather than throwing, which would trip the dev overlay.
+        console.warn(`No summary for ${runId}: status ${res.status}`);
+        setSummaries((prev) => ({ ...prev, [runId]: "error" }));
+        return;
+      }
+      const data = await res.json();
+      setSummaries((prev) => ({ ...prev, [runId]: computeSummary(data) }));
+    } catch (err) {
+      console.warn(`Error fetching summary for ${runId}:`, err);
+      setSummaries((prev) => ({ ...prev, [runId]: "error" }));
+    }
+  };
+
+  // Lazily fetch a per-run summary for the runs visible on the current page.
+  // Depends on the page bounds (not the freshly-sliced array) so it only
+  // re-runs when the list, page, or branch actually changes.
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(runs.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * PAGE_SIZE;
+    runs.slice(start, start + PAGE_SIZE).forEach((run) => {
+      if (summaries[run] === undefined) fetchSummary(run, branch);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runs, page, branch]);
+
   const formatRunId = (runId: string) => {
     try {
       if (runId.match(/^\d{4}-\d{2}-\d{2}T/)) {
@@ -134,43 +236,7 @@ export default function Home() {
   };
   return (
     <div>
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <Link
-                href="/infrastructure"
-                className="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Infrastructure
-              </Link>
-              <Link
-                href="/tests"
-                className="text-base font-medium text-blue-600 hover:text-blue-700 hover:underline"
-              >
-                Tests
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <BranchSelector
-                selectedBranch={branch}
-                onBranchChange={handleBranchChange}
-                availableBranches={availableBranches}
-              />
-              <a
-                href="https://github.com/HealthSamurai/fhir-server-performance-benchmark"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
-                title="View source on GitHub (new tab)"
-              >
-                <Github className="w-5 h-5" />
-                <span>GitHub</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {loading && (
@@ -207,9 +273,47 @@ export default function Home() {
                 Performance Benchmark Dashboard
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Comparing performance metrics across FHIR servers
+                Comparing performance metrics across FHIR servers — Aidbox, Medplum, and HAPI
               </p>
             </div>
+
+            <section className="mt-6 grid gap-4 md:grid-cols-2">
+              <Link
+                href="/infrastructure"
+                className="group flex items-start gap-4 p-5 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center justify-center w-11 h-11 rounded-lg bg-blue-50 text-blue-600 shrink-0">
+                  <Server className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-base font-semibold text-gray-900">Infrastructure</h3>
+                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-500 group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    How the benchmark is wired — servers, databases, the load generator, and their configs.
+                  </p>
+                </div>
+              </Link>
+
+              <Link
+                href="/tests"
+                className="group flex items-start gap-4 p-5 bg-white border border-gray-200 rounded-xl hover:border-blue-400 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center justify-center w-11 h-11 rounded-lg bg-green-50 text-green-600 shrink-0">
+                  <Activity className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="text-base font-semibold text-gray-900">Tests</h3>
+                    <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-green-500 group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    What we measure and how — the k6 scenarios run against each FHIR server.
+                  </p>
+                </div>
+              </Link>
+            </section>
 
         {!loading && !error && runs.length > 0 && (() => {
           const totalPages = Math.max(1, Math.ceil(runs.length / PAGE_SIZE));
@@ -218,7 +322,7 @@ export default function Home() {
           const visible = runs.slice(start, start + PAGE_SIZE);
           return (
             <>
-              <div className="mb-6">
+              <div className="mb-6 mt-10 flex items-center justify-between gap-4">
                 <h2 className="text-lg font-semibold text-gray-800">
                   Benchmark reports
                   {branch !== 'main' && (
@@ -227,24 +331,30 @@ export default function Home() {
                     </span>
                   )}
                 </h2>
+                <BranchSelector
+                  selectedBranch={branch}
+                  onBranchChange={handleBranchChange}
+                  availableBranches={availableBranches}
+                />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex flex-col gap-3">
                 {visible.map((run) => (
                   <Link
                     key={run}
                     href={branch === 'main' ? `/report?runid=${run}` : `/report?runid=${run}&branch=${branch}`}
-                    className="block p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className="flex items-center justify-between gap-4 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900 text-sm">
-                          {formatRunId(run)}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          Run ID: {run}
-                        </p>
-                      </div>
+                    <div className="flex items-baseline gap-3 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm whitespace-nowrap">
+                        {formatRunId(run)}
+                      </p>
+                      <p className="text-xs text-gray-500 truncate">
+                        Run ID: {run}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0">
+                      <RunSummary summary={summaries[run]} />
                       <svg
                         className="w-5 h-5 text-gray-400"
                         fill="none"
@@ -263,7 +373,7 @@ export default function Home() {
                 ))}
               </div>
 
-                <p className="text-right mt-8 text-sm text-gray-600 mt-1">
+                <p className="text-right mt-8 text-sm text-gray-600">
                   Showing {start + 1}–{start + visible.length} of {runs.length}
                 </p>
 
@@ -275,6 +385,63 @@ export default function Home() {
         })()}
       </main>
     </div>
+  );
+}
+
+function RunSummary({ summary }: { summary: SummaryState | undefined }) {
+  if (summary === undefined || summary === "loading") {
+    return <div className="hidden md:block h-16 w-72 rounded bg-gray-50 animate-pulse" />;
+  }
+
+  if (summary === "error" || summary.rows.length === 0) {
+    return <span className="hidden md:inline text-xs text-gray-400">no data</span>;
+  }
+
+  return (
+    <table className="hidden md:table table-fixed text-xs tabular-nums border-collapse">
+      <thead>
+        <tr className="text-gray-400">
+          <th className="font-normal text-left pr-3 pb-1 w-24" />
+          {SERVERS.map((s) => (
+            <th key={s.key} className="font-medium text-right px-2 pb-1 w-20">
+              {s.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {summary.rows.map((row) => {
+          const vals = SERVERS.map((s) => row.values[s.key]);
+          const positive = vals.filter((v) => v > 0);
+          const best = positive.length
+            ? row.lowerBetter
+              ? Math.min(...positive)
+              : Math.max(...positive)
+            : null;
+          return (
+            <tr key={row.label}>
+              <td className="text-left text-gray-500 pr-3 py-0.5 w-24 whitespace-nowrap">
+                {row.label} <span className="text-gray-300">{row.unit}</span>
+              </td>
+              {SERVERS.map((s) => {
+                const v = row.values[s.key];
+                const isBest = best !== null && v === best && v > 0;
+                return (
+                  <td
+                    key={s.key}
+                    className={`text-right px-2 py-0.5 w-20 ${
+                      isBest ? "font-semibold text-green-600" : "text-gray-700"
+                    }`}
+                  >
+                    {v > 0 ? formatRps(v) : "—"}
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
   );
 }
 

@@ -8,7 +8,8 @@ import { parseBenchmarkReport } from "@/lib/benchmark-parser";
 import { Suite } from "@/components/Suite";
 import { ReportSummary } from "@/components/ReportSummary";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Download } from "lucide-react";
+import { Header } from "@/components/Header";
 
 export default function ReportPage() {
   const searchParams = useSearchParams();
@@ -62,38 +63,17 @@ export default function ReportPage() {
   };
   return (
     <div>
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link 
-                href={branch !== 'main' ? `/?branch=${branch}` : '/'} 
-                className="text-blue-500"
-              >
-                ← Back to all reports
-              </Link>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Performance Benchmark Report
-              </h1>
-              {branch !== 'main' && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Branch: <span className="font-medium">{branch}</span>
-                </p>
-              )}
-            </div>
-            {report && (
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span>Run ID:</span>
-                <span className="font-medium">{report.runid}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
+        <Link
+          href={branch !== 'main' ? `/?branch=${branch}` : '/'}
+          className="inline-block mb-6 text-blue-500 hover:underline"
+        >
+          ← Back to all reports
+        </Link>
+
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="text-gray-500">
@@ -120,6 +100,28 @@ export default function ReportPage() {
 
         {!loading && !error && report && (
           <>
+            <div className="mb-6 flex items-center justify-between gap-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Performance Benchmark Report
+              </h1>
+              <a
+                href={reportDownloadUrl(runid || report.runid, branch)}
+                download={`SNAPSHOT_${runid || report.runid}.json`}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                title="Download report JSON"
+              >
+                <Download className="w-4 h-4" />
+                <span>Download report</span>
+              </a>
+            </div>
+            <dl className="mb-8 flex flex-wrap gap-x-10 gap-y-4 rounded-lg border border-gray-200 bg-white px-6 py-4">
+              <MetaItem label="Run ID" value={runid || report.runid} mono />
+              <MetaItem label="Branch" value={branch} />
+              <MetaItem label="Run date" value={formatDateTime(runid || report.start_time)} />
+              {report.duration > 0 && (
+                <MetaItem label="Duration" value={formatDuration(report.duration)} />
+              )}
+            </dl>
             <ReportSummary report={report} />
             {report.grafanaSnapshot?.url && (
               <Card className="w-full mt-6 mb-12">
@@ -141,7 +143,7 @@ export default function ReportPage() {
                 <iframe
                   src={`${report.grafanaSnapshot.url}?kiosk&theme=light`}
                   className="w-full"
-                  style={{ height: 700, border: 0 }}
+                  style={{ height: 950, border: 0 }}
                   title="Grafana snapshot"
                   loading="lazy"
                 />
@@ -166,4 +168,48 @@ export default function ReportPage() {
       </main>
     </div>
   );
+}
+
+function MetaItem({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <dt className="text-xs uppercase tracking-wide text-gray-400">{label}</dt>
+      <dd className={`mt-0.5 text-sm font-medium text-gray-900 ${mono ? "font-mono" : ""}`}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function formatDuration(ms: number): string {
+  if (!ms || ms < 0) return "—";
+  const totalSec = Math.round(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const parts: string[] = [];
+  if (h) parts.push(`${h}h`);
+  if (m) parts.push(`${m}m`);
+  if (s || !parts.length) parts.push(`${s}s`);
+  return parts.join(" ");
+}
+
+function reportDownloadUrl(runId: string, branchName: string): string {
+  const basePath = branchName === 'main'
+    ? 'fhir-server-performance-benchmark'
+    : `fhir-server-performance-benchmark/${branchName}`;
+  return `https://storage.googleapis.com/samurai-public/${basePath}/SNAPSHOT_${runId}.json`;
+}
+
+function formatDateTime(value: string): string {
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
