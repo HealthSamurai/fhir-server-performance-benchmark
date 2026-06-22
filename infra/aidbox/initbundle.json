@@ -17,11 +17,11 @@
       "request": {
         "method": "POST",
         "url": "AidboxMigration",
-        "ifNoneExist": "id=perf-indexes-1"
+        "ifNoneExist": "id=perf-indexes-3"
       },
       "resource": {
         "resourceType": "AidboxMigration",
-        "id": "perf-indexes-1",
+        "id": "perf-indexes-3",
         "action": "aidbox-migration-run-sql",
         "status": "to-run",
         "params": {
@@ -94,9 +94,13 @@
                   (jsonpath_extract_max_numeric ( resource, '$.\"component\".\"value\".\"Quantity\"[*].\"value\"') )
                 );
 
-                CREATE INDEX IF NOT EXISTS observation_component_value_quantity_composite_max_idx_pt ON observation USING btree (
-                  (jsonpath_extract_max_numeric ( resource, '$.\"component\".\"value\".\"Quantity\"[*].\"value\"') )
-                ) where resource @> '{\"code\":{\"coding\":[{\"code\":\"8867-4\"}]}}' ;
+                CREATE INDEX observation_component_quantity_value_composite_min_idx_pt ON public.observation USING btree (
+                  (jsonpath_extract_min_numeric ( resource, '$.\"value\".\"Quantity\"[*].\"value\"'))
+                ) where (resource @> '{\"code\": {\"coding\": [{\"code\": \"8867-4\"}]}}');
+
+                CREATE INDEX observation_component_quantity_value_composite_max_idx_pt ON public.observation USING btree (
+                  (jsonpath_extract_max_numeric ( resource, '$.\"value\".\"Quantity\"[*].\"value\"'))
+                ) where (resource @> '{\"code\": {\"coding\": [{\"code\": \"8867-4\"}]}}');
 
 
                 ---- Observation.combo-value-quantity (top-level OR component)

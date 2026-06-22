@@ -3,7 +3,7 @@ import http from 'k6/http'
 import searchSet from './searchConfig.js'
 import {escapeFhirValue, pickRand, is200, isOk, headers } from './util.js'
 
-const SLOW_MS = 200
+const SLOW_MS = 100
 
 // Like isOk, but also prints the request if it took longer than SLOW_MS.
 function isOkTimed(name, url, params) {
@@ -128,7 +128,7 @@ function testSingleSearchType(searchType, baseUrl, params, searchSet) {
             // console.log(searchRequest);
             const reqParams = { ...params, tags: { name, resourceType , searchType } }
             isOk(`${resourceType}?${name}`, searchRequest, reqParams)
-            // isOkTimed(`${resourceType}?${name}`, searchRequest, reqParams)
+            //isOkTimed(`${resourceType}?${name}`, searchRequest, reqParams)
 
           })
         }
