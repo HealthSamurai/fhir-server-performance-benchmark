@@ -177,7 +177,7 @@ steps:
   - ./runner.sh -t /k6/import.js
     ## Force refresh PG stats
   - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
-  - ./runner.sh -t /k6/search.js
+  - ./runner.sh -t /k6/search.js -s microsoft
 
   ## Cleanup
   - sleep 120

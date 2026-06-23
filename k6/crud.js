@@ -194,7 +194,9 @@ export default function ({ baseUrl, params, seeds }) {
           null,
           { ...params, responseType: 'none', tags: { name: `${rt}/?` } }
         )
-        check(x, { [`${rt} delete`]: ({ status }) => status === 200 })
+        // FHIR DELETE is spec'd to return 200 (with an OperationOutcome) or
+        // 204 (no content); aidbox/hapi/medplum answer 200, MS FHIR answers 204.
+        check(x, { [`${rt} delete`]: ({ status }) => status === 200 || status === 204 })
       })
     })
   })

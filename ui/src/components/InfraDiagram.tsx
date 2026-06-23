@@ -82,29 +82,36 @@ const NODES: DiagramNode[] = [
   { id: "aidbox",            x: 40,  y: 200, w: 220, h: 78, title: "Aidbox",            subtitle: "JVM · :8080 · /metrics on :8379",  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/aidbox.svg` },
   { id: "hapi",              x: 380, y: 200, w: 220, h: 78, title: "HAPI FHIR",         subtitle: "JVM · /actuator/prometheus",       bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/hapi.png` },
   { id: "medplum",           x: 720, y: 200, w: 220, h: 78, title: "Medplum (×8)",      subtitle: "Node.js · :8103 · OAuth2",         bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/medplum.svg` },
+  { id: "microsoft",         x: 1060, y: 200, w: 220, h: 78, title: "Microsoft FHIR",    subtitle: ".NET R4 · :8080",                  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/microsoft.svg` },
   { id: "postgres",          x: 280, y: 330, w: 280, h: 74, title: "PostgreSQL 18",     subtitle: "shared · DB-per-server",           bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "postgresql" },
   { id: "redis",             x: 720, y: 330, w: 220, h: 74, title: "Redis",             subtitle: "Medplum sessions/cache",           bgColor: "#fee2e2", borderColor: "#dc2626", textColor: "#7f1d1d", iconSlug: "redis" },
+  { id: "mssql",             x: 1060, y: 330, w: 220, h: 74, title: "SQL Server 2022",   subtitle: "dedicated · Microsoft only",       bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "microsoftsqlserver" },
   { id: "cadvisor",          x: 40,  y: 500, w: 220, h: 64, title: "cAdvisor",          subtitle: "container CPU / mem / I/O",        bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "googlecloud" },
   { id: "prometheus",        x: 380, y: 500, w: 220, h: 64, title: "Prometheus",        subtitle: "scrape + remote-write",            bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "prometheus" },
   { id: "otel-collector",    x: 720, y: 500, w: 220, h: 64, title: "OTel Collector",    subtitle: "OTLP → Prometheus exporter",       bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "opentelemetry" },
   { id: "postgres-exporter", x: 40,  y: 600, w: 220, h: 64, title: "postgres-exporter", subtitle: "PG internals",                     bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "postgresql" },
   { id: "grafana",           x: 380, y: 600, w: 220, h: 64, title: "Grafana",           subtitle: "dashboards · :13000",              bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "grafana" },
+  { id: "mssql-exporter",    x: 1060, y: 600, w: 220, h: 64, title: "mssql-exporter",   subtitle: "SQL Server internals",             bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "microsoftsqlserver" },
 ];
 
 const EDGES: DiagramEdge[] = [
   { from: "k6", to: "aidbox",              color: "blue" },
   { from: "k6", to: "hapi",                color: "blue" },
   { from: "k6", to: "medplum",             color: "blue" },
+  { from: "k6", to: "microsoft",           color: "blue" },
   { from: "k6", to: "tgz",                 color: "blue", dashed: true, label: "fetch dataset", fromSide: "right", toSide: "left" },
   { from: "aidbox",  to: "postgres",       color: "green" },
   { from: "hapi",    to: "postgres",       color: "green" },
   { from: "medplum", to: "postgres",       color: "green" },
+  { from: "microsoft", to: "mssql",        color: "green" },
   { from: "medplum", to: "redis",          color: "red" },
   { from: "aidbox", to: "prometheus",      color: "orange", dashed: true, curve: 0.4 },
   { from: "hapi",   to: "prometheus",      color: "orange", dashed: true },
   { from: "k6",     to: "prometheus",      color: "orange", dashed: true, curve: -0.5 },
   { from: "cadvisor", to: "prometheus",    color: "orange", fromSide: "right", toSide: "left" },
   { from: "postgres-exporter", to: "prometheus", color: "orange", curve: 0.3 },
+  { from: "mssql-exporter", to: "mssql",         color: "green",  dashed: true, fromSide: "top", toSide: "bottom" },
+  { from: "mssql-exporter", to: "prometheus",    color: "orange", curve: -0.3, fromSide: "left", toSide: "right" },
   { from: "prometheus", to: "grafana",     color: "orange" },
   { from: "medplum", to: "otel-collector", color: "orange", dashed: true },
   { from: "otel-collector", to: "prometheus", color: "orange", fromSide: "left", toSide: "right" },
@@ -149,7 +156,7 @@ function edgePath(a: { x: number; y: number }, b: { x: number; y: number }, curv
   return `M ${a.x} ${a.y} Q ${ctrl.x} ${ctrl.y} ${b.x} ${b.y}`;
 }
 
-const W = 980;
+const W = 1320;
 const H = 720;
 
 interface Props {
@@ -198,7 +205,7 @@ export function InfraDiagram({ snippets }: Props) {
             <rect
               x={20}
               y={470}
-              width={940}
+              width={1260}
               height={220}
               rx={10}
               ry={10}

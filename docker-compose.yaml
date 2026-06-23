@@ -4,6 +4,7 @@ volumes:
   pgdata:
   promdata:
   tgzdata:
+  mssqldata:
 
 services:
 
@@ -181,6 +182,132 @@ services:
       retries: 5
 
 ## ------------------------------------------------
+## Microsoft FHIR Server (.NET) + SQL Server datastore
+## ------------------------------------------------
+## The Microsoft FHIR server only supports SQL Server / Cosmos DB (no Postgres),
+## so it gets its own dedicated SQL Server — analogous to the shared Postgres the
+## other servers use. Tests run sequentially, so only one app+DB pair is active
+## at a time; the SQL Server therefore mirrors Postgres' budget (8 cpu / 30G) and
+## the FHIR app mirrors aidbox/hapi (8 cpu / 24G) to keep the comparison fair.
+  mssql:
+    container_name: perf-mssql
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    pull_policy: always
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 30G
+    environment:
+      ACCEPT_EULA: "Y"
+      # Developer edition = full Enterprise feature set, no Express resource caps
+      # (Express would cap the buffer pool at ~1.4G and cores, skewing the bench).
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "Fhir_Perf_2026!"
+      # SQL max server memory, kept under the 30G container limit (headroom for
+      # the thread stacks / CLR / non-buffer-pool allocations outside this cap).
+      MSSQL_MEMORY_LIMIT_MB: "26000"
+    volumes:
+      - mssqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -No -Q 'SELECT 1' -b"]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 12
+
+  # One-shot tuner (analogous to infra/postgres/postgres.conf, which Postgres
+  # loads at boot). SQL Server can't take MAXDOP / cost-threshold / tempdb layout
+  # from env vars, so apply them via T-SQL once SQL is healthy, then exit. Reuses
+  # the server image purely because it already ships sqlcmd (no extra pull).
+  mssql-tune:
+    container_name: perf-mssql-tune
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    pull_policy: always
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: "Fhir_Perf_2026!"
+    volumes:
+      - ./infra/mssql/tune.sql:/tune.sql:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - '/opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$MSSQL_SA_PASSWORD" -C -No -i /tune.sql -b'
+
+  microsoft:
+    container_name: perf-microsoft
+    image: mcr.microsoft.com/healthcareapis/r4-fhir-server:latest
+    pull_policy: always
+    # First boot creates the FHIR schema before SQL is fully warmed; restart on the
+    # occasional startup race instead of failing the whole bootstrap.
+    restart: on-failure
+    depends_on:
+      mssql:
+        condition: service_healthy
+      # Wait for tuning so the schema/index build also honours MAXDOP = 4.
+      mssql-tune:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 24G
+    environment:
+      DataStore: "SqlServer"
+      # Auth disabled to match the other servers (the k6 tests hit FHIR unauthenticated).
+      FHIRServer__Security__Enabled: "false"
+      # Raise the transaction-bundle entry cap (FhirServer:Bundle:EntryLimit,
+      # default 500). The Synthea import bundles run up to ~2.6k entries each;
+      # aidbox/hapi/medplum impose no such cap, so without this MS FHIR 400s every
+      # import. 100k = effectively unlimited for this dataset, keeping it fair.
+      FHIRServer__Bundle__EntryLimit: "100000"
+      # Max Pool Size=32 matches aidbox (32) and HAPI's HikariCP (32); ADO.NET
+      # would otherwise default to 100, giving MS FHIR an unfair connection budget.
+      SqlServer__ConnectionString: "Server=tcp:mssql,1433;Initial Catalog=FHIR;Persist Security Info=False;User ID=sa;Password=Fhir_Perf_2026!;MultipleActiveResultSets=False;Connection Timeout=30;TrustServerCertificate=true;Max Pool Size=32;Min Pool Size=4;"
+      SqlServer__AllowDatabaseCreation: "true"
+      SqlServer__Initialize: "true"
+      SqlServer__SchemaOptions__AutomaticUpdatesEnabled: "true"
+    ports:
+      - "13100:8080"
+
+  # Sidecar healthcheck (mirrors hapi-checker): the .NET runtime image has no curl,
+  # so probe /health/check from a curl container instead.
+  microsoft-checker:
+    container_name: perf-microsoft-hc
+    image: curlimages/curl
+    command: ["-c", "trap : TERM INT; sleep infinity & wait"]
+    depends_on:
+      microsoft:
+        condition: service_started
+    entrypoint: /bin/sh
+    healthcheck:
+      test: curl -f http://microsoft:8080/health/check
+      interval: 10s
+      start_period: 40s
+      retries: 30
+
+  # Prometheus exporter for SQL Server internals (DB size, transactions, page
+  # life expectancy, connections, I/O stalls) — the MSSQL counterpart to
+  # postgres-exporter, so the Microsoft FHIR datastore is visible in Grafana
+  # alongside the Postgres-backed servers. Scraped by Prometheus on :4000.
+  mssql-exporter:
+    container_name: perf-mssql-exporter
+    image: awaragi/prometheus-mssql-exporter:latest
+    pull_policy: always
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      SERVER: mssql
+      PORT: "1433"
+      USERNAME: sa
+      PASSWORD: "Fhir_Perf_2026!"
+      ENCRYPT: "true"
+      TRUST_SERVER_CERTIFICATE: "true"
+      EXPOSE: "4000"
+
+## ------------------------------------------------
 ## K6 test runner and tgz service fo import tests
 ## ------------------------------------------------
   k6:
@@ -193,6 +320,8 @@ services:
       medplum:
         condition: service_healthy
       hapi-checker:
+        condition: service_healthy
+      microsoft-checker:
         condition: service_healthy
     profiles:
       - donotstart
