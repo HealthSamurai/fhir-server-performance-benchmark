@@ -168,8 +168,16 @@ services:
       # quantity: Observation.value-quantity (btree on numeric value);
       # reference: Observation.subject/encounter/performer, Encounter.subject/
       # participant, MedicationRequest.subject/encounter/requester (GIN over
-      # fhir_extract_text refs). Composite params are not yet index-matched.
-      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category,Observation.code,Encounter.class,Observation.value-quantity,Observation.combo-value-quantity,Observation.component-value-quantity,Observation.subject,Observation.encounter,Observation.performer,Encounter.subject,Encounter.participant,MedicationRequest.subject,MedicationRequest.encounter,MedicationRequest.requester'
+      # fhir_extract_text refs). quantity: value/combo/component-value-quantity fold
+      # every value location into one min/max btree (single Index Scan, no Seq Scan).
+      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category,Observation.code,Encounter.class,Observation.value-quantity,Observation.combo-value-quantity,Observation.component-value-quantity,Observation.subject,Observation.encounter,Observation.performer,Observation.patient,Encounter.subject,Encounter.patient,Encounter.participant,MedicationRequest.subject,MedicationRequest.encounter,MedicationRequest.requester,MedicationRequest.patient'
+      # Targeted PARTIAL composite indexes for the hot LOINC codes the k6 composite
+      # suite searches (k6/searchConfig.js `code-value-quantity`). Each pins a tiny
+      # value-btree to one code, so `code-value-quantity=<code>$<op><n>` is one Index
+      # Scan instead of BitmapAnd-ing two large bitmaps. Both bare-code and
+      # `http://loinc.org|<code>` forms are listed (the query containment differs).
+      # Empty by default in the product — this is a benchmark-tuned opt-in.
+      OCTOFHIR__SEARCH__COMPOSITE_INDEXES: 'Observation.code-value-quantity=|8867-4,Observation.code-value-quantity=|8302-2,Observation.code-value-quantity=|29463-7,Observation.code-value-quantity=|39156-5,Observation.code-value-quantity=|2339-0,Observation.code-value-quantity=|2947-0,Observation.code-value-quantity=http://loinc.org|8867-4,Observation.code-value-quantity=http://loinc.org|8302-2,Observation.code-value-quantity=http://loinc.org|39156-5'
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: 'true'
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: 'false'
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
