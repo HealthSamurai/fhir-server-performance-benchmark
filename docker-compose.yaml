@@ -169,7 +169,7 @@ services:
       # reference: Observation.subject/encounter/performer, Encounter.subject/
       # participant, MedicationRequest.subject/encounter/requester (GIN over
       # fhir_extract_text refs). Composite params are not yet index-matched.
-      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category,Observation.code,Observation.value-quantity,Observation.subject,Observation.encounter,Observation.performer,Encounter.subject,Encounter.participant,MedicationRequest.subject,MedicationRequest.encounter,MedicationRequest.requester'
+      OCTOFHIR__SEARCH__INDEXED_PARAMS: 'Patient.name,Patient.address,Patient.birthdate,Organization.name,Observation.date,Encounter.date,Observation.category,Observation.code,Encounter.class,Observation.value-quantity,Observation.combo-value-quantity,Observation.component-value-quantity,Observation.subject,Observation.encounter,Observation.performer,Encounter.subject,Encounter.participant,MedicationRequest.subject,MedicationRequest.encounter,MedicationRequest.requester'
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: 'true'
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: 'false'
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
