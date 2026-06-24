@@ -177,7 +177,7 @@ steps:
   - ./runner.sh -t /k6/import.js
     ## Force refresh PG stats
   - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
-  - ./runner.sh -t /k6/search.js -s microsoft
+  - ./runner.sh -t /k6/search.js
 
   ## Record test end time (RUNID is the start time set in the configure step)
   - date -u +"%Y-%m-%dT%H:%M:%SZ" > /tmp/workspace/end-time

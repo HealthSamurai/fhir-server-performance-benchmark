@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { CodeBlock } from "@/components/CodeBlock";
 import type { NodeInfo } from "@/lib/infra-snippets";
@@ -85,13 +85,13 @@ const NODES: DiagramNode[] = [
   { id: "microsoft",         x: 1060, y: 200, w: 220, h: 78, title: "Microsoft FHIR",    subtitle: ".NET R4 · :8080",                  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/microsoft.svg` },
   { id: "postgres",          x: 280, y: 330, w: 280, h: 74, title: "PostgreSQL 18",     subtitle: "shared · DB-per-server",           bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "postgresql" },
   { id: "redis",             x: 720, y: 330, w: 220, h: 74, title: "Redis",             subtitle: "Medplum sessions/cache",           bgColor: "#fee2e2", borderColor: "#dc2626", textColor: "#7f1d1d", iconSlug: "redis" },
-  { id: "mssql",             x: 1060, y: 330, w: 220, h: 74, title: "SQL Server 2022",   subtitle: "dedicated · Microsoft only",       bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "microsoftsqlserver" },
+  { id: "mssql",             x: 1060, y: 330, w: 220, h: 74, title: "SQL Server 2022",   subtitle: "dedicated · Microsoft only",       bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconUrl: `${ASSET_BASE}/images/mssql.svg` },
   { id: "cadvisor",          x: 40,  y: 500, w: 220, h: 64, title: "cAdvisor",          subtitle: "container CPU / mem / I/O",        bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "googlecloud" },
   { id: "prometheus",        x: 380, y: 500, w: 220, h: 64, title: "Prometheus",        subtitle: "scrape + remote-write",            bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "prometheus" },
   { id: "otel-collector",    x: 720, y: 500, w: 220, h: 64, title: "OTel Collector",    subtitle: "OTLP → Prometheus exporter",       bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "opentelemetry" },
   { id: "postgres-exporter", x: 40,  y: 600, w: 220, h: 64, title: "postgres-exporter", subtitle: "PG internals",                     bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "postgresql" },
   { id: "grafana",           x: 380, y: 600, w: 220, h: 64, title: "Grafana",           subtitle: "dashboards · :13000",              bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "grafana" },
-  { id: "mssql-exporter",    x: 1060, y: 600, w: 220, h: 64, title: "mssql-exporter",   subtitle: "SQL Server internals",             bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "microsoftsqlserver" },
+  { id: "mssql-exporter",    x: 1060, y: 600, w: 220, h: 64, title: "mssql-exporter",   subtitle: "SQL Server internals",             bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconUrl: `${ASSET_BASE}/images/mssql.svg` },
 ];
 
 const EDGES: DiagramEdge[] = [
@@ -165,6 +165,8 @@ interface Props {
 
 export function InfraDiagram({ snippets }: Props) {
   const [active, setActive] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (!active) return;
@@ -175,10 +177,30 @@ export function InfraDiagram({ snippets }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [active]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setScale(Math.min(1, el.clientWidth / W));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <div>
-      <div className="overflow-x-auto flex justify-center">
-        <div className="relative" style={{ width: W, height: H, flexShrink: 0 }}>
+      <div ref={containerRef} className="overflow-x-auto flex justify-center">
+        <div
+          className="relative"
+          style={{
+            width: W,
+            height: H,
+            flexShrink: 0,
+            transform: `scale(${scale})`,
+            transformOrigin: "top center",
+            marginBottom: -(H * (1 - scale)),
+          }}
+        >
           <svg
             className="absolute inset-0 pointer-events-none"
             width={W}

@@ -8,17 +8,18 @@ import { Header } from "@/components/Header";
 
 const PAGE_SIZE = 10;
 
-const SERVERS: { key: "aidbox" | "medplum" | "hapi"; label: string }[] = [
+const SERVERS: { key: "aidbox" | "medplum" | "hapi" | "microsoft"; label: string }[] = [
   { key: "aidbox", label: "Aidbox" },
   { key: "medplum", label: "Medplum" },
   { key: "hapi", label: "HAPI" },
+  { key: "microsoft", label: "MS FHIR" },
 ];
 
 interface SuiteRow {
   label: string;
   unit: string; // "ms" | "rps" | ...
   lowerBetter: boolean;
-  values: { aidbox: number; medplum: number; hapi: number };
+  values: { aidbox: number; medplum: number; hapi: number; microsoft: number };
 }
 
 interface RunSummaryData {
@@ -41,7 +42,7 @@ function formatRps(v: number): string {
 }
 
 function computeSummary(report: any): RunSummaryData {
-  const servers: ("aidbox" | "medplum" | "hapi")[] = ["aidbox", "medplum", "hapi"];
+  const servers: ("aidbox" | "medplum" | "hapi" | "microsoft")[] = ["aidbox", "medplum", "hapi", "microsoft"];
 
   // Each suite carries the real measured throughput in result.data (the "Total"
   // RPS per server) — no need to derive anything from latency.
@@ -64,6 +65,7 @@ function computeSummary(report: any): RunSummaryData {
         aidbox: total.aidbox || 0,
         medplum: total.medplum || 0,
         hapi: total.hapi || 0,
+        microsoft: total.microsoft || 0,
       },
     };
   });
@@ -273,7 +275,7 @@ export default function Home() {
                 Performance Benchmark Dashboard
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Comparing performance metrics across FHIR servers — Aidbox, Medplum, and HAPI
+                Comparing performance metrics across FHIR servers — Aidbox, Medplum, HAPI, and Microsoft FHIR
               </p>
             </div>
 
@@ -390,7 +392,7 @@ export default function Home() {
 
 function RunSummary({ summary }: { summary: SummaryState | undefined }) {
   if (summary === undefined || summary === "loading") {
-    return <div className="hidden md:block h-16 w-72 rounded bg-gray-50 animate-pulse" />;
+    return <div className="hidden md:block h-16 w-96 rounded bg-gray-50 animate-pulse" />;
   }
 
   if (summary === "error" || summary.rows.length === 0) {

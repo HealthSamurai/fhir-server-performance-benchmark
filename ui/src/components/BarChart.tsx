@@ -39,12 +39,18 @@ function orderedServerKeys(result: BenchmarkResult): string[] {
 export function ReportBarChart({ result, size }: { result: BenchmarkResult, size: "small" | "big" }) {
     const serverKeys = orderedServerKeys(result)
 
-    // For the detailed chart size to its content: ~64px per category group plus
-    // room for the legend/axis. Avoids one lonely bar floating in a fixed-height
-    // box when a test case has a single resource type.
+    // For the detailed chart size to its content: the height of each category
+    // group scales with the number of server bars in it (~20px per bar plus
+    // padding) so adding a server doesn't squeeze the bars. Plus room for the
+    // legend/axis. Avoids one lonely bar floating in a fixed-height box when a
+    // test case has a single resource type.
     const rowCount = Math.max(result.data.length, 1)
-    const className = size === "small" ? "h-[120px] w-full" : "aspect-auto w-full"
-    const style = size === "small" ? undefined : { height: rowCount * 64 + 80 }
+    // Small summary bars are thicker (barSize 24), so they need a bit more room
+    // per server than the detailed view; both scale with the server count so an
+    // added server doesn't squeeze the group.
+    const groupHeight = size === "small" ? serverKeys.length * 28 + 12 : serverKeys.length * 20 + 20
+    const className = size === "small" ? "w-full" : "aspect-auto w-full"
+    const style = { height: rowCount * groupHeight + 80 }
 
     return (
         <ChartContainer config={chartConfig} className={className} style={style}>
