@@ -173,11 +173,19 @@ function validateBenchmarkDataPoint(dataPoint: any, suiteIndex: number, dataInde
     throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: hapi must be a number`);
   }
 
+  // microsoft was added after the first reports were snapshotted; treat it as
+  // optional and default to 0 so historical SNAPSHOT_*.json (which predate it)
+  // still parse. When present it must still be a number.
+  if ('microsoft' in dataPoint && typeof dataPoint.microsoft !== 'number') {
+    throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: microsoft must be a number`);
+  }
+
   return {
     category: dataPoint.category,
     aidbox: dataPoint.aidbox,
     medplum: dataPoint.medplum,
     hapi: dataPoint.hapi,
+    microsoft: dataPoint.microsoft ?? 0,
   };
 }
 
@@ -228,7 +236,7 @@ function validateTestCase(testCase: any, suiteIndex: number, testIndex: number) 
  * Get all server names from a benchmark report
  */
 export function getServerNames(report: BenchmarkReport): ServerName[] {
-  return ['aidbox', 'medplum', 'hapi'];
+  return ['aidbox', 'medplum', 'hapi', 'microsoft'];
 }
 
 /**

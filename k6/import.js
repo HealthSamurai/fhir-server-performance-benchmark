@@ -7,12 +7,17 @@ const bundleSize = new Counter('bundle_size')
 
 export const options = {
   discardResponseBodies: true,
+  // setup() loads the two seed bundles (~1.6k entries each) before the run.
+  // On MS FHIR each takes ~30s, blowing past k6's default 60s setupTimeout; the
+  // other servers finish well inside it. This is only a ceiling, so raising it
+  // is harmless for the fast servers.
+  setupTimeout: '600s',
   scenarios: {
     import: {
       executor: 'shared-iterations',
       vus: 20,
       iterations: 1000,
-      maxDuration: '30m',
+      maxDuration: '60m',
       gracefulStop: '30s',
     },
   },
@@ -22,7 +27,11 @@ export function setup() {
 
   const bundleUrl = __ENV.BUNDLE_URL
   const baseUrl = __ENV.BASE_URL
-  const params = { headers: headers(), timeout: '500s' }
+  // Per-request ceiling. Under the 20-VU import load MS FHIR's slow tail of large
+  // transaction bundles can sit behind others and exceed the old 500s, getting
+  // failed as client timeouts (~1.8% of imports). 900s gives that tail room to
+  // finish; it's only a ceiling, so the faster servers are unaffected.
+  const params = { headers: headers(), timeout: '900s' }
 
   // Reset tgz's rotation cursor so every server starts from bundle #0 — each
   // FHIR impl then imports the exact same set of bundles in the same order.
