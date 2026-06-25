@@ -148,10 +148,17 @@ async function instantQuery(metricsUrl, query, headers) {
 }
 
 // Query functions matching the original snapshot.ts
+// Headline RPS must match the Grafana panel legend ("mean" of the throughput
+// graph). The panels compute mean( sum(rate(...[1m])) ) — sum the per-series
+// rate at each instant, THEN time-average. The old query did the opposite
+// (sum of avg_over_time(rate[5m])): a 5m rate window over a short test averages
+// the ramp-up/down triangle, under-reporting by up to ~2x on short runs, and
+// the avg-then-sum order diverges from the legend on jagged signals. avg of sum,
+// with a [1m] rate window matching the panel, tracks the legend at any curvature.
 async function crudTotalRPS(metricsUrl, runid, headers) {
   return await instantQuery(
     metricsUrl,
-    `sum by (fhirimpl, scenario) (avg_over_time(rate(k6_http_reqs_total{runid="${runid}", scenario="crud"}[5m])[24h:]))`,
+    `avg_over_time( (sum by (fhirimpl, scenario) (rate(k6_http_reqs_total{runid="${runid}", scenario="crud"}[1m])))[24h:15s] )`,
     headers
   )
 }
@@ -167,7 +174,7 @@ async function crudP99(metricsUrl, runid, headers) {
 async function importTotalRPS(metricsUrl, runid, headers) {
   return await instantQuery(
     metricsUrl,
-    `sum by (fhirimpl, scenario) (avg_over_time(rate(k6_http_reqs_total{runid="${runid}", scenario="import"}[5m])[24h:]))`,
+    `avg_over_time( (sum by (fhirimpl, scenario) (rate(k6_http_reqs_total{runid="${runid}", scenario="import"}[1m])))[24h:15s] )`,
     headers
   )
 }
@@ -175,7 +182,7 @@ async function importTotalRPS(metricsUrl, runid, headers) {
 async function importThroughput(metricsUrl, runid, headers) {
   return await instantQuery(
     metricsUrl,
-    `sum by (fhirimpl) (avg_over_time(rate(k6_bundle_size_total{runid="${runid}"}[5m])[24h:]))`,
+    `avg_over_time( (sum by (fhirimpl) (rate(k6_bundle_size_total{runid="${runid}"}[1m])))[24h:15s] )`,
     headers
   )
 }
@@ -183,7 +190,7 @@ async function importThroughput(metricsUrl, runid, headers) {
 async function searchTotalRPS(metricsUrl, runid, headers) {
   return await instantQuery(
     metricsUrl,
-    `sum by (fhirimpl) (avg_over_time(rate(k6_http_reqs_total{runid="${runid}", scenario="search"}[5m])[24h:]))`,
+    `avg_over_time( (sum by (fhirimpl) (rate(k6_http_reqs_total{runid="${runid}", scenario="search"}[1m])))[24h:15s] )`,
     headers
   )
 }
