@@ -27,11 +27,22 @@ export function setup() {
 
   const bundleUrl = __ENV.BUNDLE_URL
   const baseUrl = __ENV.BASE_URL
+  const hdrs = headers()
+
+  // MS FHIR processes transaction-bundle entries sequentially by default, which
+  // serializes hundreds of SQL INSERTs per bundle. This header opts into parallel
+  // entry processing — Microsoft's own throughput tuning guidance, not a
+  // workaround (see fhir-best-practices). Scoped to microsoft so every server is
+  // run with its own recommended config; other servers would just ignore it.
+  if (__ENV.FHIRIMPL === 'microsoft') {
+    hdrs['x-bundle-processing-logic'] = 'parallel'
+  }
+
   // Per-request ceiling. Under the 20-VU import load MS FHIR's slow tail of large
   // transaction bundles can sit behind others and exceed the old 500s, getting
   // failed as client timeouts (~1.8% of imports). 900s gives that tail room to
   // finish; it's only a ceiling, so the faster servers are unaffected.
-  const params = { headers: headers(), timeout: '900s' }
+  const params = { headers: hdrs, timeout: '900s' }
 
   // Reset tgz's rotation cursor so every server starts from bundle #0 — each
   // FHIR impl then imports the exact same set of bundles in the same order.

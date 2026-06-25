@@ -96,6 +96,7 @@ run_test_on_server() {
 
     local run_env="
         export BUNDLE_URL=http://tgz:8080
+        export FHIRIMPL=${server}
         export K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
         export K6_PROMETHEUS_RW_TREND_STATS='p(95),p(99),min,max'"
 
