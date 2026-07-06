@@ -141,7 +141,12 @@ export default function Home() {
 
       const params = new URLSearchParams({
         prefix: prefix,
-        maxResults: '300',
+        // GCS lists objects in ascending name order with no reverse option, so we
+        // must fetch the whole set and sort client-side. maxResults is GCS's
+        // page cap (1000); at 300 the request truncated to the *oldest* 300 and
+        // the newest reports never arrived. 1000 covers the current ~300 runs
+        // with headroom — if runs ever exceed 1000, follow nextPageToken here.
+        maxResults: '1000',
         fields: 'items(name,timeCreated)',
       });
 
@@ -164,9 +169,14 @@ export default function Home() {
             } : null;
           })
           .filter((item: any) => item !== null)
-          .sort((a: any, b: any) =>
-            new Date(b.timeCreated).getTime() - new Date(a.timeCreated).getTime()
-          )
+          // Sort newest-first (most recent run at the top). The runId is the
+          // run's ISO-8601 start timestamp, so a plain code-point string compare
+          // is exactly reverse-chronological and locale-independent — unlike GCS
+          // timeCreated, which ties/misorders when files are bulk-uploaded rather
+          // than written in run order.
+          .sort((a: any, b: any) => (a.runId < b.runId ? 1 : a.runId > b.runId ? -1 : 0))
+          // Keep only the 100 most recent runs.
+          .slice(0, 100)
           .map((item: any) => item.runId);
 
         setRuns(reportRuns);
