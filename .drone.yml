@@ -172,12 +172,12 @@ steps:
   - ./runner.sh bootstrap
 
   ## Tests
-  - ./runner.sh -t /k6/prewarm.js
-  - ./runner.sh -t /k6/crud.js
-  - ./runner.sh -t /k6/import.js
+  - ./runner.sh -t /k6/prewarm.js -s aidbox
+  - ./runner.sh -t /k6/crud.js -s aidbox
+  - ./runner.sh -t /k6/import.js -a aidbox
     ## Force refresh PG stats
   - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
-  - ./runner.sh -t /k6/search.js
+  - ./runner.sh -t /k6/search.js -a aidbox
 
   ## Record test end time (RUNID is the start time set in the configure step)
   - date -u +"%Y-%m-%dT%H:%M:%SZ" > /tmp/workspace/end-time
