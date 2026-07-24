@@ -1,0 +1,12 @@
+# Local-only override: the dev machine's Docker VM has ~7.8 GiB total, but the
+# base compose sizes aidbox/postgres for a big perf box (24G/30G). Cap aidbox's
+# JVM so it boots locally instead of getting OOM-killed (exit 137).
+# Not for the perf box — delete or ignore there.
+services:
+  aidbox:
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+    environment:
+      JAVA_OPTS: '-Xmx2g -XX:MaxRAMPercentage=70 -XshowSettings:vm'

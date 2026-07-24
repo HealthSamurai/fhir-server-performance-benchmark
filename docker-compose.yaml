@@ -182,6 +182,12 @@ services:
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: 'false'
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
       OCTOFHIR__AUDIT__ENABLED: 'false'
+      # targetProfile conformance: ON to match the other servers under test
+      # (Aidbox/HAPI validate references against profiles), so the comparison is
+      # apples-to-apples. External absolute-URL references are also dereferenced
+      # over the network (SSRF-guarded: private/loopback targets stay blocked).
+      OCTOFHIR__VALIDATION__CHECK_TARGET_PROFILE: 'true'
+      OCTOFHIR__VALIDATION__FETCH_EXTERNAL_REFERENCES: 'true'
       OCTOFHIR__LOGGING__LEVEL: 'info'
       RUST_LOG: 'info'
     healthcheck:
