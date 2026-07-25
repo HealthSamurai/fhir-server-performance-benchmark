@@ -10,7 +10,8 @@ set -e
 
 # Default values
 DEFAULT_TEST="/k6/prewarm.js"
-ALL_SERVERS="octofhir aidbox hapi medplum"
+# Override with SERVERS="octofhir aidbox" to benchmark a subset.
+ALL_SERVERS="${SERVERS:-octofhir aidbox hapi medplum}"
 
 # Function to display usage
 show_usage() {
@@ -50,7 +51,7 @@ bootstrap_services() {
 
     echo "Pulling docker images..."
     echo "================================================"
-    docker compose $COMPOSE_FILES pull aidbox hapi medplum octofhir
+    docker compose $COMPOSE_FILES pull $ALL_SERVERS
 
     echo "Starting Docker Compose services  (max $max_attempts attempts)..."
     echo "================================================"

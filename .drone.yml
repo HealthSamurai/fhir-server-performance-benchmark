@@ -85,6 +85,22 @@ steps:
       aidbox:
         environment:
           BOX_LICENSE: $LICENSE
+      # Benchmark only octofhir + aidbox: keep the other servers out of
+      # bootstrap and out of k6's startup dependencies.
+      hapi:
+        profiles: [ donotstart ]
+      hapi-checker:
+        profiles: [ donotstart ]
+      medplum:
+        profiles: [ donotstart ]
+      redis:
+        profiles: [ donotstart ]
+      k6:
+        depends_on: !override
+          aidbox:
+            condition: service_healthy
+          octofhir:
+            condition: service_healthy
     EOF
   - |
     cat << EOF >> infra/prometheus/config.yaml
@@ -116,6 +132,7 @@ steps:
   - dind-ready
   privileged: true
   environment:
+    SERVERS: octofhir aidbox
     DRONE_CI_GCP_SA:
       from_secret: DRONE_CI_GCP_SA
   volumes:
