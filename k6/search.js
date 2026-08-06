@@ -1,7 +1,7 @@
 import { group, check } from 'k6'
 import http from 'k6/http'
 import searchSet from './searchConfig.js'
-import {escapeFhirValue, pickRand, is200, isOk, headers } from './util.js'
+import {escapeFhirValue, pickRand, is200, isOk, headers, searchTotal, strictThresholds } from './util.js'
 
 const SLOW_MS = 100
 
@@ -16,6 +16,7 @@ function isOkTimed(name, url, params) {
 
 export const options = {
   discardResponseBodies: true,
+  thresholds: strictThresholds,
   // setup() runs real search queries (expandReferences -> sampleIds) against the
   // freshly-imported, cold dataset to pull live ids. On the slower servers
   // (medplum) those sampling queries blow past k6's default 60s setupTimeout,
@@ -101,10 +102,78 @@ function expandReferences(set, baseUrl, params) {
   return set
 }
 
+// HTTP 200 does not mean the search ran. Servers default to lenient handling:
+// a parameter they don't index is dropped and the answer is an unfiltered page,
+// which is both fast and green. Probe every configured parameter once before
+// measuring anything and refuse to produce numbers for a suite where some
+// queries are decorative.
+//
+// The decisive probe is every entry's values[0], which is deliberately a value
+// nothing can match ("NON-EXISTS", a 2070 date, Patient/non-existent-id). A
+// working parameter narrows the result set; an ignored one returns the whole
+// collection no matter what it is handed. That comparison holds whatever the
+// dataset contains, unlike "did values[1] find anything", which only says
+// whether this particular corpus happens to hold that value — so a miss there
+// is reported but not fatal.
+//
+// Modifiers and prefixes are left off: this asks whether the parameter is wired
+// up at all, not whether every variant of it is correct.
+function assertSearchesActuallyFilter(set, baseUrl, params) {
+  const ignored = []
+  const noRecall = []
+  const unfilteredCache = {}
+
+  for (const searchType of Object.keys(set)) {
+    for (const resourceType of Object.keys(set[searchType])) {
+      if (!(resourceType in unfilteredCache)) {
+        unfilteredCache[resourceType] = searchTotal(baseUrl, resourceType, '', params)
+      }
+      const unfiltered = unfilteredCache[resourceType]
+      if (!unfiltered) continue // nothing imported for this type; nothing to prove
+
+      for (const name of Object.keys(set[searchType][resourceType])) {
+        const values = set[searchType][resourceType][name].values || []
+        const encode = v => encodeURIComponent(searchType === 'string' ? escapeFhirValue(v) : v)
+
+        if (values[0] !== undefined) {
+          const query = `${name}=${encode(values[0])}`
+          const matched = searchTotal(baseUrl, resourceType, query, params)
+          if (matched === null) {
+            ignored.push(`${resourceType}?${query}: server returned no total, cannot verify the parameter is applied`)
+          } else if (matched === unfiltered) {
+            ignored.push(`${resourceType}?${query}: returned all ${unfiltered} resources for a value nothing matches — parameter silently dropped`)
+          }
+        }
+
+        if (values[1] !== undefined) {
+          const query = `${name}=${encode(values[1])}`
+          const matched = searchTotal(baseUrl, resourceType, query, params)
+          if (matched === 0) {
+            noRecall.push(`${resourceType}?${query}: 0 of ${unfiltered}`)
+          }
+        }
+      }
+    }
+  }
+
+  if (noRecall.length) {
+    console.warn(
+      `${noRecall.length} search parameter(s) found nothing — these measure empty result sets, ` +
+      `check the dataset was fully imported:\n  - ${noRecall.join('\n  - ')}`)
+  }
+
+  if (ignored.length) {
+    throw new Error(
+      `${ignored.length} search parameter(s) are not applied by this server; ` +
+      `their timings would be pure noise:\n  - ${ignored.join('\n  - ')}`)
+  }
+}
+
 export function setup() {
   const baseUrl = __ENV.BASE_URL
   const params = { headers: headers(), timeout: '300s' }
   const expandedSet = expandReferences(searchSet, baseUrl, params)
+  assertSearchesActuallyFilter(expandedSet, baseUrl, params)
   return { baseUrl, params, searchSet: expandedSet }
 }
 

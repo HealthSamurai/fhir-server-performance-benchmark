@@ -257,11 +257,39 @@ services:
       DataStore: "SqlServer"
       # Auth disabled to match the other servers (the k6 tests hit FHIR unauthenticated).
       FHIRServer__Security__Enabled: "false"
+      # SecurityProvider's constructor asserts Authority is non-null before it ever
+      # looks at Security.Enabled, and it's an IProvideCapability — so it's resolved
+      # while building the CapabilityStatement, which ValidateFormatParametersAttribute
+      # triggers on every request. Left null, the server answers 500 to everything
+      # even with auth off. Any non-null value satisfies the assert; auth stays
+      # disabled because BuildAsync still gates on Enabled.
+      FHIRServer__Security__Authentication__Authority: "http://localhost:13100"
       # Raise the transaction-bundle entry cap (FhirServer:Bundle:EntryLimit,
       # default 500). The Synthea import bundles run up to ~2.6k entries each;
       # aidbox/hapi/medplum impose no such cap, so without this MS FHIR 400s every
       # import. 100k = effectively unlimited for this dataset, keeping it fair.
       FHIRServer__Bundle__EntryLimit: "100000"
+      # MS ships ProfileValidationOnCreate/Update = false, so its writes are only
+      # parse-checked while aidbox and octofhir run full validation — the servers
+      # are not doing comparable work.
+      #
+      # The CRUD seeds declare no profiles, so they validate cleanly and the CRUD
+      # test measures a validating server, as it should.
+      #
+      # The import test is a different story and is an open decision: 705 of the
+      # ~1150 entries in every Synthea bundle declare a US Core profile, and MS
+      # errors on a canonical it cannot resolve where aidbox accepts the resource
+      # and validates the base spec only. Until that is settled, imports against
+      # MS fail — loudly, by design. scripts/load-us-core.py is the workaround,
+      # left out of bootstrap because loading the IG into MS alone makes it
+      # validate against US Core while nobody else does.
+      FHIRServer__CoreFeatures__ProfileValidationOnCreate: "true"
+      FHIRServer__CoreFeatures__ProfileValidationOnUpdate: "true"
+      # Server-side bundle timeout (FhirServer:Bundle:MaxExecutionTimeInSeconds,
+      # default 100). With validation on, a 2.6k-entry bundle can exceed it and get
+      # cancelled — which reads as a fast failure, not slow work. Match the 900s
+      # client-side ceiling in k6/import.js so the run measures throughput instead.
+      FHIRServer__Bundle__MaxExecutionTimeInSeconds: "900"
       # Max Pool Size=32 matches aidbox (32) and HAPI's HikariCP (32); ADO.NET
       # would otherwise default to 100, giving MS FHIR an unfair connection budget.
       SqlServer__ConnectionString: "Server=tcp:mssql,1433;Initial Catalog=FHIR;Persist Security Info=False;User ID=sa;Password=Fhir_Perf_2026!;MultipleActiveResultSets=False;Connection Timeout=30;TrustServerCertificate=true;Max Pool Size=32;Min Pool Size=4;"
@@ -328,6 +356,23 @@ services:
     volumes:
       - ./k6:/k6
       - ./runner.sh:/runner.sh:ro
+
+  # One-shot loader, not wired into bootstrap. The Synthea bundles declare US
+  # Core profiles on 705 of their ~1150 entries and MS FHIR rejects a resource
+  # whose profile it cannot resolve, so this has to run before any import if MS
+  # validation is turned on. Kept out of the default path because loading the IG
+  # into MS alone makes it validate against US Core while the other servers only
+  # validate the base spec. Run manually with:
+  #   docker compose run --rm us-core-loader
+  us-core-loader:
+    container_name: perf-us-core-loader
+    image: python:3.12-alpine
+    profiles:
+      - donotstart
+    volumes:
+      - ./scripts:/scripts:ro
+    entrypoint: ["python", "/scripts/load-us-core.py"]
+    command: ["http://microsoft:8080"]
 
   tgz:
     container_name: perf-tgz

@@ -1,7 +1,7 @@
 import http from 'k6/http'
 import { check, group } from 'k6'
 
-import { jsonPatch, headers } from './util.js'
+import { jsonPatch, headers, strictThresholds } from './util.js'
 
 import claim from './seed/claim.js'
 import encounter from './seed/encounter.js'
@@ -16,6 +16,7 @@ import practitioner from './seed/practitioner.js'
 
 export const options = {
   discardResponseBodies: false,
+  thresholds: strictThresholds,
   scenarios: {
     crud: {
       executor: 'constant-vus',

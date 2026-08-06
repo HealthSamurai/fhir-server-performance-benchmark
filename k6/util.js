@@ -18,6 +18,34 @@ export function pickRand(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// A server that answers 500 (or 400) to everything answers fast, so failed
+// checks alone still produce a flattering throughput chart — the run has to fail
+// as a whole. abortOnFail stops the scenario instead of burning the full
+// duration against a server that is clearly not doing the work; delayAbortEval
+// leaves room for warm-up blips before the rate is judged.
+export const strictThresholds = {
+  checks: [{ threshold: 'rate>0.99', abortOnFail: true, delayAbortEval: '15s' }],
+  http_req_failed: [{ threshold: 'rate<0.01', abortOnFail: true, delayAbortEval: '15s' }],
+}
+
+// Total number of resources matching `query` ('' = no filter), or null when the
+// server declines to count. `_summary=count` plus an explicit `_total=accurate`
+// is needed because MS FHIR ships IncludeTotalInBundle=None and omits the total
+// otherwise.
+export function searchTotal(baseUrl, resourceType, query, params) {
+  const q = query ? `${query}&` : ''
+  const res = http.get(
+    `${baseUrl}/${resourceType}?${q}_summary=count&_total=accurate`,
+    { ...params, responseType: 'text' })
+  if (res.status !== 200) return null
+  try {
+    const total = JSON.parse(res.body).total
+    return typeof total === 'number' ? total : null
+  } catch (e) {
+    return null
+  }
+}
+
 export function is200 (url, params) {
   const res = http.get(url, params)
   return check(res, {'Status 200': ({ status }) => status === 200})

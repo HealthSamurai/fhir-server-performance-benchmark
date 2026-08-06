@@ -132,10 +132,13 @@ run_test_on_server() {
 
     # TODO: quiet  for docker compose and k6
 
+    # k6's exit code has to survive the echoes below, otherwise this function
+    # always reports success and a failed run looks like a completed one.
+    local status=0
     if [ -n "$CI" ]; then
-        docker compose $COMPOSE_FILES run -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run --quiet $k6_args $test_path"
+        docker compose $COMPOSE_FILES run -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run --quiet $k6_args $test_path" || status=$?
     else
-        docker compose $COMPOSE_FILES run -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run $k6_args $test_path"
+        docker compose $COMPOSE_FILES run -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run $k6_args $test_path" || status=$?
     fi
 
     echo ""
@@ -143,6 +146,8 @@ run_test_on_server() {
     echo "----------------------------------------"
     echo ""
     echo ""
+
+    return $status
 }
 
 # Parse command line arguments
@@ -150,6 +155,7 @@ TEST_PATH=""
 SERVER=""
 RUN_ID=""
 COMPOSE_FILES=""
+FAILED_RUNS=""
 
 # Check for help flag
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
@@ -253,10 +259,34 @@ if [ -z "$SERVER" ]; then
     echo "Running test '$TEST_PATH' on all servers sequentially with run ID: $RUN_ID"
     echo ""
     for server in $ALL_SERVERS; do
-        run_test_on_server "$TEST_PATH" "$server" "$RUN_ID"
+        if ! run_test_on_server "$TEST_PATH" "$server" "$RUN_ID"; then
+            FAILED_RUNS="$FAILED_RUNS $server"
+        fi
     done
     echo "All tests completed!"
 else
     # Run on specific server
-    run_test_on_server "$TEST_PATH" "$SERVER" "$RUN_ID"
+    if ! run_test_on_server "$TEST_PATH" "$SERVER" "$RUN_ID"; then
+        FAILED_RUNS="$SERVER"
+    fi
+fi
+
+# k6 now exits non-zero when a run is not worth reporting -- a server answering
+# 500 to everything used to look like 28x the throughput of a working one (see
+# the thresholds in k6/util.js). With `set -e` that would abort the whole
+# benchmark, so one broken server would cost every other server its remaining
+# suites -- search runs after import, and both run after this script. The
+# failures are collected and shouted about instead, and the exit code stays 0 so
+# the rest of the pipeline still runs and still publishes a report.
+if [ -n "$FAILED_RUNS" ]; then
+    echo ""
+    echo "================================================"
+    echo "❌ UNTRUSTWORTHY RUNS for $TEST_PATH:$FAILED_RUNS"
+    echo "   k6 failed its thresholds, so those servers' numbers for this suite"
+    echo "   do not reflect work done. Check the run's checks_succeeded and"
+    echo "   http_req_failed before reading anything into them."
+    echo "================================================"
+    if [ -d /tmp/workspace ]; then
+        echo "$TEST_PATH:$FAILED_RUNS" >> /tmp/workspace/failed-runs
+    fi
 fi
