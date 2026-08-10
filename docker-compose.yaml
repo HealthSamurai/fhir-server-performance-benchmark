@@ -45,7 +45,7 @@ services:
 ## ------------------------------------------------
   aidbox:
     container_name: perf-aidbox
-    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-444a0e2c068bd2617e4ad19e293fe424dcab358c
+    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-829a23677142cea9183288c23adca6524af9dc5c
     pull_policy: always
     depends_on:
       postgres:
