@@ -164,9 +164,6 @@ services:
       SERVER_WRITE_TIMEOUT: '1200s'
       SERVER_READ_TIMEOUT: '120s'
       LOG_LEVEL: "info"
-      # The Synthea import bundles run up to ~2.6k entries each; keep the
-      # per-bundle row cap effectively unlimited for this dataset, matching
-      # the other servers (see FHIRServer__Bundle__EntryLimit on microsoft).
       WRITE_MAX_ROWS_PER_BUNDLE: 2000000
 
   # Sidecar healthcheck (mirrors hapi-checker): the wso2 image is a single

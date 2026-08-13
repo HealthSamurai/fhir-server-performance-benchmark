@@ -40,8 +40,13 @@ export default function ReportPage() {
         ? 'fhir-server-performance-benchmark'
         : `fhir-server-performance-benchmark/${branchName}`;
       const reportUrl = `https://storage.googleapis.com/samurai-public/${basePath}/SNAPSHOT_${runId}.json`;
-      
-      const response = await fetch(reportUrl);
+
+      // LOCAL DEV ONLY (not for upstream): serve SNAPSHOT_<runid>.json dropped
+      // into ui/public/ before falling back to the GCS bucket.
+      let response = await fetch(`/SNAPSHOT_${runId}.json`);
+      if (!response.ok || !(response.headers.get('content-type') || '').includes('json')) {
+        response = await fetch(reportUrl);
+      }
       
       if (!response.ok) {
         if (response.status === 404) {
