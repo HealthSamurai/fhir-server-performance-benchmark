@@ -16,7 +16,8 @@ const chartConfig = {
     aidbox: { label: "Aidbox", },
     medplum: { label: "Medplum", },
     hapi: { label: "Hapi", },
-    microsoft: { label: "Microsoft", }
+    microsoft: { label: "Microsoft", },
+    wso2: { label: "WSO2", }
 } satisfies ChartConfig
 
 

@@ -32,7 +32,7 @@ export default function Infrastructure({ snippets }: InfrastructureProps) {
         <section className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-3">Overview</h2>
           <p className="text-gray-700 leading-relaxed">
-            The benchmark compares four FHIR server implementations under identical workload, hardware, and database
+            The benchmark compares five FHIR server implementations under identical workload, hardware, and database
             conditions. Each test run boots the full stack via Docker Compose, runs k6 scenarios sequentially against
             each server, and ships metrics to Prometheus.
           </p>
@@ -60,6 +60,11 @@ export default function Infrastructure({ snippets }: InfrastructureProps) {
               <h3 className="font-semibold text-gray-900">Microsoft FHIR Server</h3>
               <p className="text-sm text-gray-600 mt-1">mcr.microsoft.com/healthcareapis/r4-fhir-server</p>
               <p className="text-sm text-gray-700 mt-2">.NET, auth disabled, 8 vCPU / 24 GB RAM — backed by a dedicated SQL Server 2022 (not the shared PostgreSQL)</p>
+            </div>
+            <div className="border border-gray-200 rounded-md p-4">
+              <h3 className="font-semibold text-gray-900">WSO2 FHIR Server</h3>
+              <p className="text-sm text-gray-600 mt-1">wso2/wso2-fhir-server</p>
+              <p className="text-sm text-gray-700 mt-2">Go, auth disabled, 8 vCPU / 24 GB RAM</p>
             </div>
           </div>
         </section>

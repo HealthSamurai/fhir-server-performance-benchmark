@@ -54,6 +54,7 @@ function createBenchmarkDataPoints(groupedMetrics) {
             aidbox: 0,
             medplum: 0,
             hapi: 0,
+            wso2: 0,
             microsoft: 0
         };
 
@@ -89,6 +90,7 @@ function getTotalRPS(results, precision = 0) {
         aidbox: precision == 0 ? Math.round(serverTotals.get('aidbox') || 0) : parseFloat((serverTotals.get('aidbox') || 0).toFixed(precision)),
         medplum: precision == 0 ? Math.round(serverTotals.get('medplum') || 0) : parseFloat((serverTotals.get('medplum') || 0).toFixed(precision)),
         hapi: precision == 0 ? Math.round(serverTotals.get('hapi') || 0) : parseFloat((serverTotals.get('hapi') || 0).toFixed(precision)),
+        wso2: precision == 0 ? Math.round(serverTotals.get('wso2') || 0) : parseFloat((serverTotals.get('wso2') || 0).toFixed(precision)),
         microsoft: precision == 0 ? Math.round(serverTotals.get('microsoft') || 0) : parseFloat((serverTotals.get('microsoft') || 0).toFixed(precision))
     };
 
@@ -160,6 +162,7 @@ export function convertSourceToBenchmarkReport(
                 aidbox: 0,
                 medplum: 0,
                 hapi: 0,
+                wso2: 0,
                 microsoft: 0
             }
             sourceData.import.test_cases.data.result.forEach(result => {

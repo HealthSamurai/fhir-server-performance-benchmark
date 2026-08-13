@@ -138,7 +138,55 @@ services:
       retries: 10
 
 ## ------------------------------------------------
-## Medplum 
+## WSO2 FHIR Server
+## ------------------------------------------------
+  wso2:
+    container_name: perf-wso2
+    image: wso2/wso2-fhir-server:v0.6.51
+    pull_policy: if_not_present
+    entrypoint:
+      - /fhir-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 24G
+    ports:
+      - "13110:9090"
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/wso2?sslmode=disable&pool_max_conns=32&pool_min_conns=8"
+      BASE_URL: "http://localhost:9090/fhir/r4"
+      SERVER_PORT: 9090
+      FHIR_CREATE_TABLES: true
+      SERVER_WRITE_TIMEOUT: '1200s'
+      SERVER_READ_TIMEOUT: '120s'
+      LOG_LEVEL: "info"
+      # The Synthea import bundles run up to ~2.6k entries each; keep the
+      # per-bundle row cap effectively unlimited for this dataset, matching
+      # the other servers (see FHIRServer__Bundle__EntryLimit on microsoft).
+      WRITE_MAX_ROWS_PER_BUNDLE: 2000000
+
+  # Sidecar healthcheck (mirrors hapi-checker): the wso2 image is a single
+  # static binary with no curl, so probe /health/ready from a curl container.
+  wso2-checker:
+    container_name: perf-wso2-hc
+    image: curlimages/curl
+    command: ["-c", "trap : TERM INT; sleep infinity & wait"]
+    depends_on:
+      wso2:
+        condition: service_started
+    entrypoint: /bin/sh
+    healthcheck:
+      test: curl -f http://wso2:9090/health/ready
+      interval: 10s
+      start_period: 30s
+      retries: 10
+
+## ------------------------------------------------
+## Medplum
 ## ------------------------------------------------
   medplum:
     image: medplum/medplum-server:latest
@@ -320,6 +368,8 @@ services:
       medplum:
         condition: service_healthy
       hapi-checker:
+        condition: service_healthy
+      wso2-checker:
         condition: service_healthy
       microsoft-checker:
         condition: service_healthy

@@ -180,12 +180,19 @@ function validateBenchmarkDataPoint(dataPoint: any, suiteIndex: number, dataInde
     throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: microsoft must be a number`);
   }
 
+  // wso2 was added even later; same treatment as microsoft so older
+  // SNAPSHOT_*.json still parse.
+  if ('wso2' in dataPoint && typeof dataPoint.wso2 !== 'number') {
+    throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: wso2 must be a number`);
+  }
+
   return {
     category: dataPoint.category,
     aidbox: dataPoint.aidbox,
     medplum: dataPoint.medplum,
     hapi: dataPoint.hapi,
     microsoft: dataPoint.microsoft ?? 0,
+    wso2: dataPoint.wso2 ?? 0,
   };
 }
 
@@ -236,7 +243,7 @@ function validateTestCase(testCase: any, suiteIndex: number, testIndex: number) 
  * Get all server names from a benchmark report
  */
 export function getServerNames(report: BenchmarkReport): ServerName[] {
-  return ['aidbox', 'medplum', 'hapi', 'microsoft'];
+  return ['aidbox', 'medplum', 'hapi', 'microsoft', 'wso2'];
 }
 
 /**
