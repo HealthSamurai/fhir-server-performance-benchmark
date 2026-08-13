@@ -142,8 +142,8 @@ services:
 ## ------------------------------------------------
   wso2:
     container_name: perf-wso2
-    image: wso2/wso2-fhir-server:v0.6.51
-    pull_policy: if_not_present
+    image: ghcr.io/wso2/fhir-server:latest
+    pull_policy: always
     entrypoint:
       - /fhir-server
     depends_on:

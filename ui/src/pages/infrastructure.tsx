@@ -63,7 +63,7 @@ export default function Infrastructure({ snippets }: InfrastructureProps) {
             </div>
             <div className="border border-gray-200 rounded-md p-4">
               <h3 className="font-semibold text-gray-900">WSO2 FHIR Server</h3>
-              <p className="text-sm text-gray-600 mt-1">wso2/wso2-fhir-server</p>
+              <p className="text-sm text-gray-600 mt-1">ghcr.io/wso2/fhir-server</p>
               <p className="text-sm text-gray-700 mt-2">Go, auth disabled, 8 vCPU / 24 GB RAM</p>
             </div>
           </div>
