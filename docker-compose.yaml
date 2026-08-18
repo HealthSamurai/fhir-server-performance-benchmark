@@ -67,7 +67,7 @@ services:
       BOX_DB_PASSWORD: postgres
       BOX_DB_USER: postgres
       BOX_WEB_THREAD: 16
-      BOX_DB_POOL_MAXIMUM__POOL__SIZE: 32
+      BOX_DB_POOL_MAXIMUM_POOL_SIZE: 64
       BOX_FHIR_COMPLIANT_MODE: true
       BOX_FHIR_CORRECT_AIDBOX_FORMAT: true
       BOX_FHIR_CREATEDAT_URL: https://aidbox.app/ex/createdAt
@@ -75,8 +75,9 @@ services:
       BOX_FHIR_SEARCH_AUTHORIZE_INLINE_REQUESTS: true
       BOX_FHIR_SEARCH_COMPARISONS: true
       BOX_SEARCH_DATE_MULTIRANGE: true
-      BOX_FHIR_TERMINOLOGY_SERVICE_BASE_URL: https://tx.health-samurai.io/fhir
-      #BOX_FHIR_TERMINOLOGY_ENGINE: hybrid
+      BOX_FHIR_TERMINOLOGY_ENGINE: hybrid
+      BOX_FHIR_TERMINOLOGY_ENGINE_HYBRID_EXTERNAL_TX_SERVER: https://tx5.health-samurai.io/fhir
+      BOX_FHIR_TERMINOLOGY_SERVICE_BASE_URL: https://tx5.health-samurai.io/fhir
       BOX_METRICS_PORT: 8379
       BOX_INIT_BUNDLE: file:///tmp/initbundle.json
       BOX_ROOT_CLIENT_SECRET: secret
