@@ -93,7 +93,8 @@ function createBenchmarkDataPoints(groupedMetrics: Map<string, Map<string, numbe
             aidbox: 0,
             medplum: 0,
             hapi: 0,
-            microsoft: 0
+            microsoft: 0,
+            wso2: 0
         };
 
         for (const [server, value] of serverMetrics) {
@@ -128,7 +129,8 @@ function getTotalRPS(results: PrometheusResult[], precision: number = 0): Benchm
         aidbox: precision == 0 ? Math.round(serverTotals.get('aidbox') || 0) : parseFloat(serverTotals.get('aidbox')?.toFixed(precision) || '0'),
         medplum: precision == 0 ? Math.round(serverTotals.get('medplum') || 0) : parseFloat(serverTotals.get('medplum')?.toFixed(precision) || '0'),
         hapi: precision == 0 ? Math.round(serverTotals.get('hapi') || 0) : parseFloat(serverTotals.get('hapi')?.toFixed(precision) || '0'),
-        microsoft: precision == 0 ? Math.round(serverTotals.get('microsoft') || 0) : parseFloat(serverTotals.get('microsoft')?.toFixed(precision) || '0')
+        microsoft: precision == 0 ? Math.round(serverTotals.get('microsoft') || 0) : parseFloat(serverTotals.get('microsoft')?.toFixed(precision) || '0'),
+        wso2: precision == 0 ? Math.round(serverTotals.get('wso2') || 0) : parseFloat(serverTotals.get('wso2')?.toFixed(precision) || '0')
     };
 
     return [dataPoint];
@@ -199,10 +201,11 @@ export function convertSourceToBenchmarkReport(
                 aidbox: 0,
                 medplum: 0,
                 hapi: 0,
-                microsoft: 0
+                microsoft: 0,
+                wso2: 0
             }
             sourceData.import.test_cases.data.result.forEach(result => {
-                const server = result.metric.fhirimpl as 'aidbox' | 'medplum' | 'hapi' | 'microsoft';
+                const server = result.metric.fhirimpl as 'aidbox' | 'medplum' | 'hapi' | 'microsoft' | 'wso2';
                 data[server] = Math.round(parseFloat(result.value[1]))
             })
 

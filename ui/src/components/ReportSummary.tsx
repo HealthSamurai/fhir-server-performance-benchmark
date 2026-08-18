@@ -18,7 +18,8 @@ const serverIcons = {
   aidbox: `${basePath}/images/aidbox.svg`,
   medplum: `${basePath}/images/medplum.svg`,
   hapi: `${basePath}/images/hapi.png`,
-  microsoft: `${basePath}/images/microsoft.svg`
+  microsoft: `${basePath}/images/microsoft.svg`,
+  wso2: `${basePath}/images/wso2.svg`
 }
 
 function calculateServerStats(suites: BenchmarkSuite[]) {
@@ -26,14 +27,16 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
     aidbox: { wins: 0, avgRps: 0 },
     medplum: { wins: 0, avgRps: 0 },
     hapi: { wins: 0, avgRps: 0 },
-    microsoft: { wins: 0, avgRps: 0 }
+    microsoft: { wins: 0, avgRps: 0 },
+    wso2: { wins: 0, avgRps: 0 }
   }
 
   let totalRps = {
     aidbox: 0,
     medplum: 0,
     hapi: 0,
-    microsoft: 0
+    microsoft: 0,
+    wso2: 0
   }
 
   let rpsTestCount = 0
@@ -45,7 +48,8 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
         aidbox: testCase.data.reduce((sum: number, dp: any) => sum + dp.aidbox, 0) / testCase.data.length,
         medplum: testCase.data.reduce((sum: number, dp: any) => sum + dp.medplum, 0) / testCase.data.length,
         hapi: testCase.data.reduce((sum: number, dp: any) => sum + dp.hapi, 0) / testCase.data.length,
-        microsoft: testCase.data.reduce((sum: number, dp: any) => sum + dp.microsoft, 0) / testCase.data.length
+        microsoft: testCase.data.reduce((sum: number, dp: any) => sum + dp.microsoft, 0) / testCase.data.length,
+        wso2: testCase.data.reduce((sum: number, dp: any) => sum + dp.wso2, 0) / testCase.data.length
       }
 
       // For metrics where lower is better (like response time), we want the minimum
