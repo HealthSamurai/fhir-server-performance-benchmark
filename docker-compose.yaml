@@ -45,7 +45,7 @@ services:
 ## ------------------------------------------------
   aidbox:
     container_name: perf-aidbox
-    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-ec3770d11252de2dd95f5a31eea89f9e73819df4
+    image: us-east1-docker.pkg.dev/aidbox2-205511/aidbox/aidboxone:git-b959599e0bc8a31f45b32deb4b040a0f899e7513
     pull_policy: always
     depends_on:
       postgres:
@@ -66,7 +66,7 @@ services:
       BOX_DB_HOST: postgres
       BOX_DB_PASSWORD: postgres
       BOX_DB_USER: postgres
-      BOX_WEB_THREAD: 24
+      BOX_WEB_THREAD: 16
       BOX_DB_POOL_MAXIMUM__POOL__SIZE: 32
       BOX_FHIR_COMPLIANT_MODE: true
       BOX_FHIR_CORRECT_AIDBOX_FORMAT: true
