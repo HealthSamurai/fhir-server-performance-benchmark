@@ -22,13 +22,34 @@
   "defaultRateLimit": -1,
   "defaultAuthRateLimit": -1,
   "defaultFhirQuota": 1000000000,
+  "rateLimitsEnabled": false,
+  "dispatchEnabled": false,
+  "autoDownloadEnabled": false,
+  "enabledSearchParameters": [
+    "conformance-date",
+    "conformance-version",
+    "conformance-url",
+    "Patient-name",
+    "individual-address",
+    "individual-birthdate",
+    "Organization-name",
+    "Observation-category",
+    "clinical-code",
+    "clinical-date",
+    "Observation-value-quantity",
+    "Encounter-status",
+    "Encounter-class",
+    "MedicationRequest-subject",
+    "medications-encounter",
+    "MedicationRequest-requester"
+  ],
   "database": {
     "host": "postgres",
     "port": 5432,
     "dbname": "medplum",
     "username": "postgres",
     "password": "postgres",
-    "maxConnections": 32
+    "maxConnections": 16
   },
   "redis": {
     "host": "redis",
