@@ -257,11 +257,25 @@ services:
       DataStore: "SqlServer"
       # Auth disabled to match the other servers (the k6 tests hit FHIR unauthenticated).
       FHIRServer__Security__Enabled: "false"
+      # Newer :latest images construct SecurityProvider unconditionally and throw
+      # ArgumentNullException on a null Authority even when Security is disabled,
+      # which breaks the startup CapabilityStatement and makes EVERY request 500.
+      # A placeholder Authority/Audience satisfies the constructor; neither is used
+      # for auth while Enabled=false.
+      FHIRServer__Security__Authentication__Authority: "https://localhost"
+      FHIRServer__Security__Authentication__Audience: "https://localhost"
+      FHIRServer__Bundle__MaxExecutionTimeInSeconds: "900"
       # Raise the transaction-bundle entry cap (FhirServer:Bundle:EntryLimit,
       # default 500). The Synthea import bundles run up to ~2.6k entries each;
       # aidbox/hapi/medplum impose no such cap, so without this MS FHIR 400s every
       # import. 100k = effectively unlimited for this dataset, keeping it fair.
       FHIRServer__Bundle__EntryLimit: "100000"
+      # Disable audit logging. MS FHIR has no on/off switch for it (FhirServer:Audit
+      # only sets a header prefix); it logs two AuditEvent entries per request via
+      # the IAuditLogger category at Information level. Silencing that log category
+      # turns the audit log off — removes the per-request logging overhead/noise
+      # under load. The other servers don't emit per-request audit logs either.
+      Logging__LogLevel__Microsoft.Health.Fhir.Core.Features.Audit.IAuditLogger: "None"
       # Max Pool Size=32 matches aidbox (32) and HAPI's HikariCP (32); ADO.NET
       # would otherwise default to 100, giving MS FHIR an unfair connection budget.
       SqlServer__ConnectionString: "Server=tcp:mssql,1433;Initial Catalog=FHIR;Persist Security Info=False;User ID=sa;Password=Fhir_Perf_2026!;MultipleActiveResultSets=False;Connection Timeout=30;TrustServerCertificate=true;Max Pool Size=32;Min Pool Size=4;"
