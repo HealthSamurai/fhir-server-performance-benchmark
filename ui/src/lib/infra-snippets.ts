@@ -176,6 +176,13 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
         "The .NET (R4) FHIR server from Microsoft. Unlike the others it only supports SQL Server / Cosmos DB, so it runs against a dedicated SQL Server (mssql) rather than the shared PostgreSQL.",
       snippets: [compose("microsoft")],
     },
+    wso2: {
+      id: "wso2",
+      title: "WSO2 FHIR Server",
+      description:
+        "Go-based FHIR server from WSO2, shipped as a single static binary. Runs against the shared PostgreSQL (wso2 database); health probed on /health/ready via a curl sidecar.",
+      snippets: [compose("wso2")],
+    },
     postgres: {
       id: "postgres",
       title: "PostgreSQL 18",
