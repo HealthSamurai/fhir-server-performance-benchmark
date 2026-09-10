@@ -172,14 +172,14 @@ steps:
   - ./runner.sh bootstrap
 
   ## Tests
-  - ./runner.sh -t /k6/prewarm.js
-  - ./runner.sh -t /k6/crud.js
-  - ./runner.sh -t /k6/import.js
+  - ./runner.sh -t /k6/prewarm.js -s intersystems 
+  - ./runner.sh -t /k6/crud.js -s intersystems  
+  - ./runner.sh -t /k6/import.js -s intersystems
     ## Force refresh PG stats
   - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
     ## Same for InterSystems IRIS: SQL table statistics of the FHIR storage
   - docker exec perf-intersystems /opt/intersystems/gather-stats.sh
-  - ./runner.sh -t /k6/search.js
+  - ./runner.sh -t /k6/search.js -s intersystems
 
   ## Record test end time (RUNID is the start time set in the configure step)
   - date -u +"%Y-%m-%dT%H:%M:%SZ" > /tmp/workspace/end-time
