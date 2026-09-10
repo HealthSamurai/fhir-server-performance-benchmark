@@ -8,3 +8,11 @@ globals=0,0,24000,0,0,0
 # Routine buffers (MB) and generic memory heap (KB).
 routines=2048
 gmheap=1048576
+
+# Wait for the journal write to reach disk before a commit returns — the same
+# durability as PostgreSQL's default synchronous_commit=on (the other servers'
+# datastore) and SQL Server's full durability. IRIS defaults to 0: TCOMMIT
+# returns once the journal record is buffered and the journal daemon writes it
+# out shortly after, which would give IRIS a head start on every write.
+[Journal]
+SynchCommit=1
