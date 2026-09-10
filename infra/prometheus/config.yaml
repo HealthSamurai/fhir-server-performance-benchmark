@@ -23,6 +23,11 @@ scrape_configs:
     static_configs:
       - targets: ["hapi:8080"]
 
+  - job_name: intersystems
+    metrics_path: /api/monitor/metrics
+    static_configs:
+      - targets: ["intersystems:52773"]
+
   - job_name: postgres
     static_configs:
       - targets: ["postgres-exporter:9187"]

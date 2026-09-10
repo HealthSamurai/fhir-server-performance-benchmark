@@ -84,6 +84,7 @@ const NODES: DiagramNode[] = [
   { id: "medplum",           x: 720, y: 200, w: 220, h: 78, title: "Medplum (×8)",      subtitle: "Node.js · :8103 · OAuth2",         bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/medplum.svg` },
   { id: "microsoft",         x: 1060, y: 200, w: 220, h: 78, title: "Microsoft FHIR",    subtitle: ".NET R4 · :8080",                  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/microsoft.svg` },
   { id: "wso2",              x: 1400, y: 200, w: 220, h: 78, title: "WSO2 FHIR",         subtitle: "Go · :9090",                       bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/wso2.svg` },
+  { id: "intersystems",      x: 1740, y: 200, w: 220, h: 78, title: "IRIS for Health",   subtitle: "IRIS · :52773 · embedded DB",      bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/intersystems.svg` },
   { id: "postgres",          x: 280, y: 330, w: 280, h: 74, title: "PostgreSQL 18",     subtitle: "shared · DB-per-server",           bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "postgresql" },
   { id: "redis",             x: 720, y: 330, w: 220, h: 74, title: "Redis",             subtitle: "Medplum sessions/cache",           bgColor: "#fee2e2", borderColor: "#dc2626", textColor: "#7f1d1d", iconSlug: "redis" },
   { id: "mssql",             x: 1060, y: 330, w: 220, h: 74, title: "SQL Server 2022",   subtitle: "dedicated · Microsoft only",       bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconUrl: `${ASSET_BASE}/images/mssql.svg` },
@@ -101,6 +102,7 @@ const EDGES: DiagramEdge[] = [
   { from: "k6", to: "medplum",             color: "blue" },
   { from: "k6", to: "microsoft",           color: "blue" },
   { from: "k6", to: "wso2",                color: "blue" },
+  { from: "k6", to: "intersystems",        color: "blue" },
   { from: "k6", to: "tgz",                 color: "blue", dashed: true, label: "fetch dataset", fromSide: "right", toSide: "left" },
   { from: "aidbox",  to: "postgres",       color: "green" },
   { from: "hapi",    to: "postgres",       color: "green" },
@@ -110,6 +112,7 @@ const EDGES: DiagramEdge[] = [
   { from: "medplum", to: "redis",          color: "red" },
   { from: "aidbox", to: "prometheus",      color: "orange", dashed: true, curve: 0.4 },
   { from: "hapi",   to: "prometheus",      color: "orange", dashed: true },
+  { from: "intersystems", to: "prometheus", color: "orange", dashed: true, fromSide: "bottom", toSide: "right" },
   { from: "k6",     to: "prometheus",      color: "orange", dashed: true, curve: -0.5 },
   { from: "cadvisor", to: "prometheus",    color: "orange", fromSide: "right", toSide: "left" },
   { from: "postgres-exporter", to: "prometheus", color: "orange", curve: 0.3 },
@@ -159,7 +162,7 @@ function edgePath(a: { x: number; y: number }, b: { x: number; y: number }, curv
   return `M ${a.x} ${a.y} Q ${ctrl.x} ${ctrl.y} ${b.x} ${b.y}`;
 }
 
-const W = 1660;
+const W = 2000;
 const H = 720;
 
 interface Props {

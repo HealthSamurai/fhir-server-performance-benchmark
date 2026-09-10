@@ -1,0 +1,10 @@
+# Applied at every start via ISC_CPF_MERGE_FILE (analogous to
+# infra/postgres/postgres.conf). Without explicit sizes IRIS auto-selects 25% of
+# the *host* memory for global buffers, which overshoots the container limit.
+[config]
+# 8K-block global buffers (MB) — the IRIS database cache, like Postgres'
+# shared_buffers / SQL Server's buffer pool.
+globals=0,0,24000,0,0,0
+# Routine buffers (MB) and generic memory heap (KB).
+routines=2048
+gmheap=1048576

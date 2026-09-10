@@ -55,7 +55,8 @@ function createBenchmarkDataPoints(groupedMetrics) {
             medplum: 0,
             hapi: 0,
             wso2: 0,
-            microsoft: 0
+            microsoft: 0,
+            intersystems: 0
         };
 
         for (const [server, value] of serverMetrics) {
@@ -91,7 +92,8 @@ function getTotalRPS(results, precision = 0) {
         medplum: precision == 0 ? Math.round(serverTotals.get('medplum') || 0) : parseFloat((serverTotals.get('medplum') || 0).toFixed(precision)),
         hapi: precision == 0 ? Math.round(serverTotals.get('hapi') || 0) : parseFloat((serverTotals.get('hapi') || 0).toFixed(precision)),
         wso2: precision == 0 ? Math.round(serverTotals.get('wso2') || 0) : parseFloat((serverTotals.get('wso2') || 0).toFixed(precision)),
-        microsoft: precision == 0 ? Math.round(serverTotals.get('microsoft') || 0) : parseFloat((serverTotals.get('microsoft') || 0).toFixed(precision))
+        microsoft: precision == 0 ? Math.round(serverTotals.get('microsoft') || 0) : parseFloat((serverTotals.get('microsoft') || 0).toFixed(precision)),
+        intersystems: precision == 0 ? Math.round(serverTotals.get('intersystems') || 0) : parseFloat((serverTotals.get('intersystems') || 0).toFixed(precision))
     };
 
     return [dataPoint];
@@ -163,7 +165,8 @@ export function convertSourceToBenchmarkReport(
                 medplum: 0,
                 hapi: 0,
                 wso2: 0,
-                microsoft: 0
+                microsoft: 0,
+                intersystems: 0
             }
             sourceData.import.test_cases.data.result.forEach(result => {
                 data[result.metric.fhirimpl] = Math.round(parseFloat(result.value[1]))

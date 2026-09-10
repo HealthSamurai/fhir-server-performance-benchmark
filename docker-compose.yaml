@@ -183,6 +183,44 @@ services:
       retries: 10
 
 ## ------------------------------------------------
+## InterSystems IRIS for Health (FHIR R4)
+## ------------------------------------------------
+## Set up like https://github.com/intersystems-community/iris-fhir-template
+## (FHIRSERVER namespace, JsonAdvSql storage, endpoint /fhir/r4), but installed
+## on start by infra/intersystems/fhir-server.sh rather than at image build —
+## see that script for why. IRIS keeps FHIR data in its own embedded database,
+## so this one container is app + datastore: its budget is the FHIR app's
+## (8 cpu / 24G) plus the datastore's (8 cpu / 30G), like microsoft + mssql.
+## Community Edition caps IRIS at 20 cores and 8 license units.
+  intersystems:
+    container_name: perf-intersystems
+    image: intersystemsdc/irishealth-community:latest
+    pull_policy: always
+    # Run iris-main directly: the image's wrapper entrypoint fails its own
+    # post-start step on 2026.1 (irissqlcli "dbapi.connect") and shuts IRIS down.
+    # -a runs the FHIR install once IRIS is up; if it fails, IRIS stops.
+    entrypoint: ["/tini", "--", "/iris-main"]
+    command: ["--check-caps", "false", "--ISCAgent", "false", "-a", "/opt/intersystems/fhir-server.sh"]
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 54G
+    environment:
+      ISC_CPF_MERGE_FILE: /opt/intersystems/merge.cpf
+    volumes:
+      - ./infra/intersystems:/opt/intersystems:ro
+    healthcheck:
+      # The image's own healthcheck only waits for IRIS itself; this one passes
+      # once the first-start FHIR install is done and the endpoint answers.
+      test: wget -q -O /dev/null http://localhost:52773/fhir/r4/metadata
+      interval: 10s
+      start_period: 60s
+      retries: 60
+    ports:
+      - "13120:52773"
+
+## ------------------------------------------------
 ## Medplum
 ## ------------------------------------------------
   medplum:
@@ -383,6 +421,8 @@ services:
       wso2-checker:
         condition: service_healthy
       microsoft-checker:
+        condition: service_healthy
+      intersystems:
         condition: service_healthy
     profiles:
       - donotstart

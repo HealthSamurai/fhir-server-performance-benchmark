@@ -8,19 +8,20 @@ import { Header } from "@/components/Header";
 
 const PAGE_SIZE = 10;
 
-const SERVERS: { key: "aidbox" | "medplum" | "hapi" | "microsoft" | "wso2"; label: string }[] = [
+const SERVERS: { key: "aidbox" | "medplum" | "hapi" | "microsoft" | "wso2" | "intersystems"; label: string }[] = [
   { key: "aidbox", label: "Aidbox" },
   { key: "medplum", label: "Medplum" },
   { key: "hapi", label: "HAPI" },
   { key: "microsoft", label: "MS FHIR" },
   { key: "wso2", label: "WSO2" },
+  { key: "intersystems", label: "IRIS" },
 ];
 
 interface SuiteRow {
   label: string;
   unit: string; // "ms" | "rps" | ...
   lowerBetter: boolean;
-  values: { aidbox: number; medplum: number; hapi: number; microsoft: number; wso2: number };
+  values: { aidbox: number; medplum: number; hapi: number; microsoft: number; wso2: number; intersystems: number };
 }
 
 interface RunSummaryData {
@@ -43,7 +44,7 @@ function formatRps(v: number): string {
 }
 
 function computeSummary(report: any): RunSummaryData {
-  const servers: ("aidbox" | "medplum" | "hapi" | "microsoft" | "wso2")[] = ["aidbox", "medplum", "hapi", "microsoft", "wso2"];
+  const servers: ("aidbox" | "medplum" | "hapi" | "microsoft" | "wso2" | "intersystems")[] = ["aidbox", "medplum", "hapi", "microsoft", "wso2", "intersystems"];
 
   // Each suite carries the real measured throughput in result.data (the "Total"
   // RPS per server) — no need to derive anything from latency.
@@ -68,6 +69,7 @@ function computeSummary(report: any): RunSummaryData {
         hapi: total.hapi || 0,
         microsoft: total.microsoft || 0,
         wso2: total.wso2 || 0,
+        intersystems: total.intersystems || 0,
       },
     };
   });
@@ -287,7 +289,7 @@ export default function Home() {
                 Performance Benchmark Dashboard
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Comparing performance metrics across FHIR servers — Aidbox, Medplum, HAPI, Microsoft FHIR, and WSO2 FHIR
+                Comparing performance metrics across FHIR servers — Aidbox, Medplum, HAPI, Microsoft FHIR, WSO2 FHIR, and InterSystems IRIS for Health
               </p>
             </div>
 
