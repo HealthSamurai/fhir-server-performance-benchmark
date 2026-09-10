@@ -39,6 +39,14 @@ scrape_configs:
   - job_name: cadvisor
     static_configs:
       - targets: ["cadvisor:8080"]
+    # cAdvisor turns every Docker image label into a container_label_* label. The
+    # IRIS image carries 22 of them, which (with the labels CI adds at remote-write)
+    # pushes its series past VictoriaMetrics' 40-labels-per-series limit, so
+    # perf-intersystems CPU/memory never reached the dashboards. Drop the image
+    # metadata labels; the com.docker.compose.* ones the dashboards use stay.
+    metric_relabel_configs:
+      - action: labeldrop
+        regex: container_label_(com_intersystems_.+|org_opencontainers_.+|description|maintainer|name|release|summary|vendor|version)
 
   - job_name: medplum
     static_configs:

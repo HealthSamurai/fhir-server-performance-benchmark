@@ -187,11 +187,12 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
       id: "intersystems",
       title: "InterSystems IRIS for Health",
       description:
-        "IRIS for Health Community Edition, set up like intersystems-community/iris-fhir-template (FHIRSERVER namespace, JsonAdvSql storage, /fhir/r4). FHIR data lives in IRIS's embedded database, so one container is both app and datastore. The FHIR server is installed on first start; buffers are sized via a CPF merge file. Native Prometheus endpoint at /api/monitor/metrics.",
+        "IRIS for Health Community Edition, set up like intersystems-community/iris-fhir-template (FHIRSERVER namespace, JsonAdvSql storage, /fhir/r4). FHIR data lives in IRIS's embedded database, so one container is both app and datastore. The FHIR server is installed on first start; buffers are sized via a CPF merge file, and the bundled web server caps concurrent requests at 16 (httpd-local.conf). Native Prometheus endpoint at /api/monitor/metrics.",
       snippets: [
         compose("intersystems"),
         fileSnippet("infra/intersystems/fhir-server.sh", "bash"),
         fileSnippet("infra/intersystems/merge.cpf", "conf"),
+        fileSnippet("infra/intersystems/httpd-local.conf", "conf"),
         fileSnippet("infra/intersystems/gather-stats.sh", "bash"),
       ],
     },

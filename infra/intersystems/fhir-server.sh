@@ -21,6 +21,7 @@
 #     unauthenticated requests (HS.FHIRServer.RestHandler:processRequest).
 #   - Web Gateway response/queue timeouts raised from 60s to 900s (the k6 import
 #     request ceiling), so the gateway doesn't cut off a slow transaction bundle.
+#     Request concurrency is capped in httpd-local.conf.
 set -e
 
 iris session "$ISC_PACKAGE_INSTANCENAME" -U HSLIB <<'EOF'
