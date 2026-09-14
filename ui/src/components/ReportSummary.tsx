@@ -20,7 +20,7 @@ const serverIcons = {
   hapi: `${basePath}/images/hapi.png`,
   microsoft: `${basePath}/images/microsoft.svg`,
   wso2: `${basePath}/images/wso2.svg`,
-  intersystems: `${basePath}/images/intersystems.svg`
+  intersystems: `${basePath}/images/intersystems.png`
 }
 
 function calculateServerStats(suites: BenchmarkSuite[]) {

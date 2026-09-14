@@ -8,13 +8,15 @@ import { Header } from "@/components/Header";
 
 const PAGE_SIZE = 10;
 
-const SERVERS: { key: "aidbox" | "medplum" | "hapi" | "microsoft" | "wso2" | "intersystems"; label: string }[] = [
-  { key: "aidbox", label: "Aidbox" },
-  { key: "medplum", label: "Medplum" },
-  { key: "hapi", label: "HAPI" },
-  { key: "microsoft", label: "MS FHIR" },
-  { key: "wso2", label: "WSO2" },
-  { key: "intersystems", label: "IRIS" },
+const ASSET_BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
+
+const SERVERS: { key: "aidbox" | "medplum" | "hapi" | "microsoft" | "wso2" | "intersystems"; label: string; icon: string }[] = [
+  { key: "aidbox", label: "Aidbox", icon: `${ASSET_BASE}/images/aidbox.svg` },
+  { key: "medplum", label: "Medplum", icon: `${ASSET_BASE}/images/medplum.svg` },
+  { key: "hapi", label: "HAPI", icon: `${ASSET_BASE}/images/hapi.png` },
+  { key: "microsoft", label: "MS FHIR", icon: `${ASSET_BASE}/images/microsoft.svg` },
+  { key: "wso2", label: "WSO2", icon: `${ASSET_BASE}/images/wso2.svg` },
+  { key: "intersystems", label: "IrisHealth", icon: `${ASSET_BASE}/images/intersystems.png` },
 ];
 
 interface SuiteRow {
@@ -361,11 +363,11 @@ export default function Home() {
                     href={branch === 'main' ? `/report?runid=${run}` : `/report?runid=${run}&branch=${branch}`}
                     className="flex items-center justify-between gap-4 px-4 py-3 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-baseline gap-3 min-w-0">
+                    <div className="flex flex-col min-w-0">
                       <p className="font-medium text-gray-900 text-sm whitespace-nowrap">
                         {formatRunId(run)}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
                         Run ID: {run}
                       </p>
                     </div>
@@ -406,7 +408,7 @@ export default function Home() {
 
 function RunSummary({ summary }: { summary: SummaryState | undefined }) {
   if (summary === undefined || summary === "loading") {
-    return <div className="hidden md:block h-16 w-96 rounded bg-gray-50 animate-pulse" />;
+    return <div className="hidden md:block h-16 w-[42rem] rounded bg-gray-50 animate-pulse" />;
   }
 
   if (summary === "error" || summary.rows.length === 0) {
@@ -416,11 +418,15 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
   return (
     <table className="hidden md:table table-fixed text-xs tabular-nums border-collapse">
       <thead>
-        <tr className="text-gray-400">
-          <th className="font-normal text-left pr-3 pb-1 w-24" />
+        <tr className="text-gray-700 border-b border-gray-200">
+          <th className="font-normal text-left pr-3 pb-1.5 w-24" />
           {SERVERS.map((s) => (
-            <th key={s.key} className="font-medium text-right px-2 pb-1 w-20">
-              {s.label}
+            <th key={s.key} className="font-semibold text-right px-2 pb-1.5 w-24">
+              <span className="inline-flex items-center justify-end gap-1.5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={s.icon} alt="" className="w-3.5 h-3.5 object-contain shrink-0" />
+                <span>{s.label}</span>
+              </span>
             </th>
           ))}
         </tr>
@@ -435,9 +441,9 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
               : Math.max(...positive)
             : null;
           return (
-            <tr key={row.label}>
-              <td className="text-left text-gray-500 pr-3 py-0.5 w-24 whitespace-nowrap">
-                {row.label} <span className="text-gray-300">{row.unit}</span>
+            <tr key={row.label} className="border-b border-gray-100 last:border-0">
+              <td className="text-left text-gray-700 font-medium pr-3 py-0.5 w-24 whitespace-nowrap">
+                {row.label} <span className="text-gray-400 font-normal">{row.unit}</span>
               </td>
               {SERVERS.map((s) => {
                 const v = row.values[s.key];
@@ -445,8 +451,8 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
                 return (
                   <td
                     key={s.key}
-                    className={`text-right px-2 py-0.5 w-20 ${
-                      isBest ? "font-semibold text-green-600" : "text-gray-700"
+                    className={`text-right px-2 py-0.5 w-24 ${
+                      isBest ? "font-bold text-green-700" : v > 0 ? "text-gray-900" : "text-gray-400"
                     }`}
                   >
                     {v > 0 ? formatRps(v) : "—"}

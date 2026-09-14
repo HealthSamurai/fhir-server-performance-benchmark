@@ -18,7 +18,7 @@ const chartConfig = {
     hapi: { label: "Hapi", },
     microsoft: { label: "Microsoft", },
     wso2: { label: "WSO2", },
-    intersystems: { label: "InterSystems", }
+    intersystems: { label: "IrisHealth", }
 } satisfies ChartConfig
 
 
