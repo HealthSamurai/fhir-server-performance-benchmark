@@ -19,11 +19,24 @@
 #   - A `fhir` user for HTTP Basic auth. Unlike the other servers, auth can't be
 #     switched off: the IRIS for Health FHIR endpoint serves only `metadata` to
 #     unauthenticated requests (HS.FHIRServer.RestHandler:processRequest).
+#   - /tmp/fhir-ready is created only when everything is done: the compose
+#     healthcheck waits for it, so no request reaches the endpoint while the
+#     install is still generating the search schema (see docker-compose.yaml).
 #   - Web Gateway response/queue timeouts raised from 60s to 900s (the k6 import
-#     request ceiling), so the gateway doesn't cut off a slow transaction bundle.
+#     request ceiling), so the gateway doesn't cut off a slow transaction bundle
+#     (with the default 60s the biggest Synthea bundles fail with 504).
 #     Request concurrency is capped in httpd-local.conf.
+#
+# InstallInstance occasionally runs before HealthShare's background startup has
+# loaded the FHIR metadata ("Functional List Subject Resource Type 'Patient' ...
+# is not a valid resource type"); the install is idempotent, so retry a few times.
 set -e
 
+install() {
+# The Web Gateway registers itself with IRIS on its first request; until then the
+# gateway settings below have nothing to apply to. Prime it with a request that
+# does not touch the FHIR endpoint (the endpoint must not be hit mid-install).
+wget -q -T 30 -O /dev/null http://localhost:52773/api/monitor/metrics || true
 iris session "$ISC_PACKAGE_INSTANCENAME" -U HSLIB <<'EOF'
 set appKey = "/fhir/r4", ns = "FHIRSERVER"
 set strategyClass = "HS.FHIRServer.Storage.JsonAdvSQL.InteractionsStrategy"
@@ -42,9 +55,35 @@ if '##class(Security.Users).Exists("fhir") { set sc = ##class(Security.Users).Cr
 set user("ChangePassword") = 0, user("PasswordNeverExpires") = 1
 set sc = ##class(Security.Users).Modify("fhir", .user) if 'sc { do $system.OBJ.DisplayError(sc) do ##class(%SYSTEM.Process).Terminate(, 1) }
 set gateway = $system.CSP.GetGatewayRegistry().GetGatewayMgrs().GetAt(1)
+if '$isobject(gateway) { write !,"Web Gateway is not registered (no request has passed through it yet)",! do ##class(%SYSTEM.Process).Terminate(, 1) }
 set sc = gateway.GetDefaultParams(.params) if 'sc { do $system.OBJ.DisplayError(sc) do ##class(%SYSTEM.Process).Terminate(, 1) }
 set params("Server_Response_Timeout") = 900, params("Queued_Request_Timeout") = 900
 set sc = gateway.SetDefaultParams(.params) if 'sc { do $system.OBJ.DisplayError(sc) do ##class(%SYSTEM.Process).Terminate(, 1) }
 write !,"FHIR server installed at ",appKey,!
 halt
 EOF
+}
+
+# The install generates the search-index schema by iterating the metadata
+# search-parameter tree; a concurrent HS.FHIRMeta.API.getInstance() for the
+# same packages (Load = kill + re-merge of that tree) makes the iteration skip a
+# random run of resource types, which are then left with no search columns and
+# every search on them silently returns everything. Verify against the metadata
+# and, if anything is missing, repeat what UpdateService does: GenerateFromMeta
+# is idempotent, GenSearchTablesFromSchema adds the missing columns.
+verify_search_schema() {
+iris session "$ISC_PACKAGE_INSTANCENAME" -U FHIRSERVER <<'EOF'
+set appKey = "/fhir/r4", id = ##class(HS.FHIRServer.ServiceAdmin).GetInstanceIdForEndpoint(appKey), svc = ##class(HS.FHIRServer.ServiceInstance).GetById(id), api = ##class(HS.FHIRMeta.API).getInstance(svc.packageList)
+for pass = 1:1:3 { set types = 0, missing = "", t = "" for { set t = api.NextSearchParamResourceType(t) quit:t=""  set types = types + 1, p = "", params = 0 for { set p = api.NextSearchParamForResourceType(t, p) quit:p=""  if (p.type '= "composite") && (p.code '= "_in") set params = params + 1 } if params > 0 { set c = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS N FROM HS_FHIRServer_Storage_Json.SearchColumn WHERE ServiceKey = ? AND ResourceType = ?", id, t) do c.%Next() if c.%Get("N") = 0 set missing = missing _ t _ " " } } write !, "search schema check ", pass, ": ", types, " resource types, missing search columns: ", $select(missing = "": "none", 1: missing), ! quit:missing=""  write "repairing the search schema", ! hang 5 do ##class(HS.FHIRServer.Storage.Json.SearchColumn).GenerateFromMeta(api, svc.parentRepo.%Id(), id) set strategy = ##class(HS.FHIRServer.API.InteractionsStrategy).GetStrategyForEndpoint(appKey), builder = ##class(HS.FHIRServer.Storage.JsonAdvSQL.SearchTableBuilder).%New(strategy) do builder.GenSearchTablesFromSchema(, 0, 0) }
+if (missing '= "") || (types < 100) { write "search schema still incomplete (", types, " types, missing: ", missing, ")", ! do ##class(%SYSTEM.Process).Terminate(, 1) }
+halt
+EOF
+}
+
+for attempt in 1 2 3 4 5; do
+  if install && verify_search_schema; then touch /tmp/fhir-ready; exit 0; fi
+  echo "FHIR server install attempt $attempt failed; retrying in 20s"
+  sleep 20
+done
+echo "FHIR server install failed after 5 attempts"
+exit 1

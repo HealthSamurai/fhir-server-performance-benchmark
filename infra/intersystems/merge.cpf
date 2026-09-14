@@ -14,5 +14,5 @@ gmheap=1048576
 # datastore) and SQL Server's full durability. IRIS defaults to 0: TCOMMIT
 # returns once the journal record is buffered and the journal daemon writes it
 # out shortly after, which would give IRIS a head start on every write.
-[Journal]
+[Miscellaneous]
 SynchCommit=1
