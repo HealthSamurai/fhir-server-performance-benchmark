@@ -19,6 +19,15 @@
 #   - A `fhir` user for HTTP Basic auth. Unlike the other servers, auth can't be
 #     switched off: the IRIS for Health FHIR endpoint serves only `metadata` to
 #     unauthenticated requests (HS.FHIRServer.RestHandler:processRequest).
+#   - The FHIR metadata tree is loaded before InstallInstance and the install
+#     waits until no other process is (re)loading it: the endpoint install
+#     iterates that tree to generate the search schema, and a concurrent load
+#     (kill + re-merge by another process) makes it skip a run of resource
+#     types. After the install the schema is verified against the metadata and
+#     repaired the way UpdateService does, including the SQL privileges of the
+#     %HS_DB_FHIRSERVER role on the generated tables — without those, requests
+#     touching a table fail with "ResourceTypeUnknown" while single creates
+#     (object access, no SQL privilege check) still work.
 #   - /tmp/fhir-ready is created only when everything is done: the compose
 #     healthcheck waits for it, so no request reaches the endpoint while the
 #     install is still generating the search schema (see docker-compose.yaml).
@@ -43,6 +52,8 @@ set strategyClass = "HS.FHIRServer.Storage.JsonAdvSQL.InteractionsStrategy"
 try { do ##class(HS.Util.Installer.Foundation).Install(ns) } catch ex { do $system.OBJ.DisplayError(ex.AsStatus()) do ##class(%SYSTEM.Process).Terminate(, 1) }
 zn ns
 try { do ##class(HS.FHIRServer.Installer).InstallNamespace() } catch ex { do $system.OBJ.DisplayError(ex.AsStatus()) do ##class(%SYSTEM.Process).Terminate(, 1) }
+set api = ##class(HS.FHIRMeta.API).getInstance($lb("hl7.fhir.r4.core@4.0.1")) write !, "FHIR metadata loaded: ", $select($isobject(api): "ok", 1: "FAILED"), !
+for i = 1:1:90 { zn "%SYS" set busy = "" set q = ##class(%SQL.Statement).%ExecDirect(, "SELECT Pid, CurrentLineAndRoutine FROM %SYS.ProcessQuery WHERE Pid <> ? AND CurrentLineAndRoutine [ 'HS.FHIRMeta'", $job) while q.%Next() { set busy = busy _ q.%Get("Pid") _ ":" _ q.%Get("CurrentLineAndRoutine") _ " " } zn ns quit:busy=""  write "waiting for another process loading FHIR metadata: ", busy, ! hang 2 }
 try { if '##class(HS.FHIRServer.ServiceAdmin).EndpointExists(appKey) { do ##class(HS.FHIRServer.Installer).InstallInstance(appKey, strategyClass, $lb("hl7.fhir.r4.core@4.0.1")) } } catch ex { do $system.OBJ.DisplayError(ex.AsStatus()) do ##class(%SYSTEM.Process).Terminate(, 1) }
 if '##class(HS.FHIRServer.ServiceAdmin).EndpointExists(appKey) { write !,"FHIR endpoint ",appKey," was not created",! do ##class(%SYSTEM.Process).Terminate(, 1) }
 set strategy = ##class(HS.FHIRServer.API.InteractionsStrategy).GetStrategyForEndpoint(appKey)
@@ -74,8 +85,11 @@ EOF
 verify_search_schema() {
 iris session "$ISC_PACKAGE_INSTANCENAME" -U FHIRSERVER <<'EOF'
 set appKey = "/fhir/r4", id = ##class(HS.FHIRServer.ServiceAdmin).GetInstanceIdForEndpoint(appKey), svc = ##class(HS.FHIRServer.ServiceInstance).GetById(id), api = ##class(HS.FHIRMeta.API).getInstance(svc.packageList)
-for pass = 1:1:3 { set types = 0, missing = "", t = "" for { set t = api.NextSearchParamResourceType(t) quit:t=""  set types = types + 1, p = "", params = 0 for { set p = api.NextSearchParamForResourceType(t, p) quit:p=""  if (p.type '= "composite") && (p.code '= "_in") set params = params + 1 } if params > 0 { set c = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS N FROM HS_FHIRServer_Storage_Json.SearchColumn WHERE ServiceKey = ? AND ResourceType = ?", id, t) do c.%Next() if c.%Get("N") = 0 set missing = missing _ t _ " " } } write !, "search schema check ", pass, ": ", types, " resource types, missing search columns: ", $select(missing = "": "none", 1: missing), ! quit:missing=""  write "repairing the search schema", ! hang 5 do ##class(HS.FHIRServer.Storage.Json.SearchColumn).GenerateFromMeta(api, svc.parentRepo.%Id(), id) set strategy = ##class(HS.FHIRServer.API.InteractionsStrategy).GetStrategyForEndpoint(appKey), builder = ##class(HS.FHIRServer.Storage.JsonAdvSQL.SearchTableBuilder).%New(strategy) do builder.GenSearchTablesFromSchema(, 0, 0) }
+for pass = 1:1:3 { set types = 0, missing = "", t = "" for { set t = api.NextSearchParamResourceType(t) quit:t=""  set types = types + 1, p = "", params = 0 for { set p = api.NextSearchParamForResourceType(t, p) quit:p=""  if (p.type '= "composite") && (p.code '= "_in") set params = params + 1 } if params > 0 { set c = ##class(%SQL.Statement).%ExecDirect(, "SELECT COUNT(*) AS N FROM HS_FHIRServer_Storage_Json.SearchColumn WHERE ServiceKey = ? AND ResourceType = ?", id, t) do c.%Next() if c.%Get("N") = 0 set missing = missing _ t _ " " } } write !, "search schema check ", pass, ": ", types, " resource types, missing search columns: ", $select(missing = "": "none", 1: missing), ! quit:missing=""  write "repairing the search schema", ! hang 5 do ##class(HS.FHIRServer.Storage.Json.SearchColumn).GenerateFromMeta(api, svc.parentRepo.%Id(), id) set strategy = ##class(HS.FHIRServer.API.InteractionsStrategy).GetStrategyForEndpoint(appKey), builder = ##class(HS.FHIRServer.Storage.JsonAdvSQL.SearchTableBuilder).%New(strategy) do builder.GenSearchTablesFromSchema(, 0, 0, 1) do ##class(HS.HC.Util.Installer).SetupPermissions($namespace, "") }
 if (missing '= "") || (types < 100) { write "search schema still incomplete (", types, " types, missing: ", missing, ")", ! do ##class(%SYSTEM.Process).Terminate(, 1) }
+set role = "%HS_DB_" _ $namespace, pkg = svc.searchClassesPackage _ "."
+for pass = 1:1:2 { set tables = 0, broken = 0, noaccess = 0, sample = "" set q = ##class(%SQL.Statement).%ExecDirect(, "SELECT SqlSchemaName, SqlTableName FROM %Dictionary.CompiledClass WHERE Name %STARTSWITH ? AND ClassType = 'persistent'", pkg) while q.%Next() { set tables = tables + 1, tbl = q.%Get("SqlSchemaName") _ "." _ q.%Get("SqlTableName") if '$SYSTEM.SQL.Schema.TableExists(tbl) { set broken = broken + 1 set:sample="" sample = tbl } elseif ('$SYSTEM.SQL.Security.CheckPrivilege(role, 1, tbl, "s")) || ('$SYSTEM.SQL.Security.CheckPrivilege(role, 1, tbl, "i")) { set noaccess = noaccess + 1 set:sample="" sample = tbl } } write "search tables check ", pass, ": ", tables, " tables, not projected: ", broken, ", without privileges for ", role, ": ", noaccess, $select(sample = "": "", 1: " (e.g. " _ sample _ ")"), ! quit:(broken = 0) && (noaccess = 0)  write "granting privileges on the search tables", ! do ##class(HS.HC.Util.Installer).SetupPermissions($namespace, "") }
+if (broken > 0) || (noaccess > 0) || (tables < 1000) { write "search tables still broken", ! do ##class(%SYSTEM.Process).Terminate(, 1) }
 halt
 EOF
 }

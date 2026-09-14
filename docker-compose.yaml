@@ -201,6 +201,9 @@ services:
     # -a runs the FHIR install once IRIS is up; if it fails, IRIS stops.
     entrypoint: ["/tini", "--", "/iris-main"]
     command: ["--check-caps", "false", "--ISCAgent", "false", "-a", "/opt/intersystems/fhir-server.sh"]
+    # As for microsoft: the first-start install can lose a race with IRIS's own
+    # background startup; restart instead of failing the whole bootstrap.
+    restart: on-failure
     deploy:
       resources:
         limits:
@@ -213,8 +216,12 @@ services:
       - ./infra/intersystems/httpd-local.conf:/usr/irissys/httpd/conf/httpd-local.conf:ro
     healthcheck:
       # The image's own healthcheck only waits for IRIS itself; this one passes
-      # once the first-start FHIR install is done and the endpoint answers.
-      test: wget -q -O /dev/null http://localhost:52773/fhir/r4/metadata
+      # once fhir-server.sh has finished (marker file) and the endpoint answers.
+      # Probing the endpoint earlier is not just useless: a request that arrives
+      # while the install is still generating the search schema makes IRIS load
+      # the metadata tree under the generator's feet, and a random run of
+      # resource types ends up with no search columns (see fhir-server.sh).
+      test: test -f /tmp/fhir-ready && wget -q -O /dev/null http://localhost:52773/fhir/r4/metadata
       interval: 10s
       start_period: 60s
       retries: 60
