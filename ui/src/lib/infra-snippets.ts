@@ -196,6 +196,13 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
         fileSnippet("infra/intersystems/gather-stats.sh", "bash"),
       ],
     },
+    octofhir: {
+      id: "octofhir",
+      title: "OctoFHIR",
+      description:
+        "Rust FHIR server. Runs against the shared PostgreSQL (octofhir database) with in-place JSONB search indexes configured via environment. Native Prometheus endpoint at /metrics.",
+      snippets: [compose("octofhir")],
+    },
     postgres: {
       id: "postgres",
       title: "PostgreSQL 18",
