@@ -280,9 +280,11 @@ services:
 ## other servers use. Tests run sequentially, so only one app+DB pair is active
 ## at a time; the SQL Server therefore mirrors Postgres' budget (8 cpu / 30G) and
 ## the FHIR app mirrors aidbox/hapi (8 cpu / 24G) to keep the comparison fair.
+## SQL Server 2025 is required: FHIR schema V119+ uses the native `vector` type,
+## and on 2022 the schema upgrade fails, so storage never initializes.
   mssql:
     container_name: perf-mssql
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2025-latest
     pull_policy: always
     deploy:
       resources:
@@ -313,7 +315,7 @@ services:
   # the server image purely because it already ships sqlcmd (no extra pull).
   mssql-tune:
     container_name: perf-mssql-tune
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: mcr.microsoft.com/mssql/server:2025-latest
     pull_policy: always
     depends_on:
       mssql:
@@ -377,7 +379,9 @@ services:
       - "13100:8080"
 
   # Sidecar healthcheck (mirrors hapi-checker): the .NET runtime image has no curl,
-  # so probe /health/check from a curl container instead.
+  # so probe /health/check from a curl container instead. Require overallStatus
+  # "Healthy": the endpoint answers 200 for "Degraded" too, which is what it
+  # reports for the first 5 min while storage is (or is failing to) initialize.
   microsoft-checker:
     container_name: perf-microsoft-hc
     image: curlimages/curl
@@ -387,7 +391,7 @@ services:
         condition: service_started
     entrypoint: /bin/sh
     healthcheck:
-      test: curl -f http://microsoft:8080/health/check
+      test: curl -fsS --max-time 5 http://microsoft:8080/health/check | grep -q '"overallStatus":"Healthy"'
       interval: 10s
       start_period: 40s
       retries: 30
