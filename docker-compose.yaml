@@ -4,6 +4,7 @@ volumes:
   pgdata:
   promdata:
   tgzdata:
+  mssqldata:
 
 services:
   ## ------------------------------------------------
@@ -197,11 +198,103 @@ services:
       start_period: 60s
       retries: 30
     ports:
-      - '13100:8888'
+      - '13130:8888'
 
-  ## ------------------------------------------------
-  ## Medplum
-  ## ------------------------------------------------
+
+## ------------------------------------------------
+## WSO2 FHIR Server
+## ------------------------------------------------
+  wso2:
+    container_name: perf-wso2
+    image: ghcr.io/wso2/fhir-server:latest
+    pull_policy: always
+    entrypoint:
+      - /fhir-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 24G
+    ports:
+      - "13110:9090"
+    environment:
+      DATABASE_URL: "postgres://postgres:postgres@postgres:5432/wso2?sslmode=disable&pool_max_conns=32&pool_min_conns=8"
+      BASE_URL: "http://localhost:9090/fhir/r4"
+      SERVER_PORT: 9090
+      FHIR_CREATE_TABLES: true
+      SERVER_WRITE_TIMEOUT: '1200s'
+      SERVER_READ_TIMEOUT: '120s'
+      LOG_LEVEL: "info"
+      WRITE_MAX_ROWS_PER_BUNDLE: 2000000
+
+  # Sidecar healthcheck (mirrors hapi-checker): the wso2 image is a single
+  # static binary with no curl, so probe /health/ready from a curl container.
+  wso2-checker:
+    container_name: perf-wso2-hc
+    image: curlimages/curl
+    command: ["-c", "trap : TERM INT; sleep infinity & wait"]
+    depends_on:
+      wso2:
+        condition: service_started
+    entrypoint: /bin/sh
+    healthcheck:
+      test: curl -f http://wso2:9090/health/ready
+      interval: 10s
+      start_period: 30s
+      retries: 10
+
+## ------------------------------------------------
+## InterSystems IRIS for Health (FHIR R4)
+## ------------------------------------------------
+## Set up like https://github.com/intersystems-community/iris-fhir-template
+## (FHIRSERVER namespace, JsonAdvSql storage, endpoint /fhir/r4), but installed
+## on start by infra/intersystems/fhir-server.sh rather than at image build —
+## see that script for why. IRIS keeps FHIR data in its own embedded database,
+## so this one container is app + datastore: its budget is the FHIR app's
+## (8 cpu / 24G) plus the datastore's (8 cpu / 30G), like microsoft + mssql.
+## Community Edition caps IRIS at 20 cores and 8 license units.
+  intersystems:
+    container_name: perf-intersystems
+    image: intersystemsdc/irishealth-community:latest
+    pull_policy: always
+    # Run iris-main directly: the image's wrapper entrypoint fails its own
+    # post-start step on 2026.1 (irissqlcli "dbapi.connect") and shuts IRIS down.
+    # -a runs the FHIR install once IRIS is up; if it fails, IRIS stops.
+    entrypoint: ["/tini", "--", "/iris-main"]
+    command: ["--check-caps", "false", "--ISCAgent", "false", "-a", "/opt/intersystems/fhir-server.sh"]
+    # As for microsoft: the first-start install can lose a race with IRIS's own
+    # background startup; restart instead of failing the whole bootstrap.
+    restart: on-failure
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 54G
+    environment:
+      ISC_CPF_MERGE_FILE: /opt/intersystems/merge.cpf
+    volumes:
+      - ./infra/intersystems:/opt/intersystems:ro
+      - ./infra/intersystems/httpd-local.conf:/usr/irissys/httpd/conf/httpd-local.conf:ro
+    healthcheck:
+      # The image's own healthcheck only waits for IRIS itself; this one passes
+      # once fhir-server.sh has finished (marker file) and the endpoint answers.
+      # Probing the endpoint earlier is not just useless: a request that arrives
+      # while the install is still generating the search schema makes IRIS load
+      # the metadata tree under the generator's feet, and a random run of
+      # resource types ends up with no search columns (see fhir-server.sh).
+      test: test -f /tmp/fhir-ready && wget -q -O /dev/null http://localhost:52773/fhir/r4/metadata
+      interval: 10s
+      start_period: 60s
+      retries: 60
+    ports:
+      - "13120:52773"
+
+## ------------------------------------------------
+## Medplum
+## ------------------------------------------------
   medplum:
     image: medplum/medplum-server:latest
     pull_policy: always
@@ -243,9 +336,153 @@ services:
       timeout: 5s
       retries: 5
 
-  ## ------------------------------------------------
-  ## K6 test runner and tgz service fo import tests
-  ## ------------------------------------------------
+## ------------------------------------------------
+## Microsoft FHIR Server (.NET) + SQL Server datastore
+## ------------------------------------------------
+## The Microsoft FHIR server only supports SQL Server / Cosmos DB (no Postgres),
+## so it gets its own dedicated SQL Server — analogous to the shared Postgres the
+## other servers use. Tests run sequentially, so only one app+DB pair is active
+## at a time; the SQL Server therefore mirrors Postgres' budget (8 cpu / 30G) and
+## the FHIR app mirrors aidbox/hapi (8 cpu / 24G) to keep the comparison fair.
+## SQL Server 2025 is required: FHIR schema V119+ uses the native `vector` type,
+## and on 2022 the schema upgrade fails, so storage never initializes.
+  mssql:
+    container_name: perf-mssql
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    pull_policy: always
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 30G
+    environment:
+      ACCEPT_EULA: "Y"
+      # Developer edition = full Enterprise feature set, no Express resource caps
+      # (Express would cap the buffer pool at ~1.4G and cores, skewing the bench).
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "Fhir_Perf_2026!"
+      # SQL max server memory, kept under the 30G container limit (headroom for
+      # the thread stacks / CLR / non-buffer-pool allocations outside this cap).
+      MSSQL_MEMORY_LIMIT_MB: "26000"
+    volumes:
+      - mssqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -No -Q 'SELECT 1' -b"]
+      interval: 10s
+      start_period: 30s
+      timeout: 5s
+      retries: 12
+
+  # One-shot tuner (analogous to infra/postgres/postgres.conf, which Postgres
+  # loads at boot). SQL Server can't take MAXDOP / cost-threshold / tempdb layout
+  # from env vars, so apply them via T-SQL once SQL is healthy, then exit. Reuses
+  # the server image purely because it already ships sqlcmd (no extra pull).
+  mssql-tune:
+    container_name: perf-mssql-tune
+    image: mcr.microsoft.com/mssql/server:2025-latest
+    pull_policy: always
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: "Fhir_Perf_2026!"
+    volumes:
+      - ./infra/mssql/tune.sql:/tune.sql:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - '/opt/mssql-tools18/bin/sqlcmd -S mssql -U sa -P "$$MSSQL_SA_PASSWORD" -C -No -i /tune.sql -b'
+
+  microsoft:
+    container_name: perf-microsoft
+    image: mcr.microsoft.com/healthcareapis/r4-fhir-server:latest
+    pull_policy: always
+    # First boot creates the FHIR schema before SQL is fully warmed; restart on the
+    # occasional startup race instead of failing the whole bootstrap.
+    restart: on-failure
+    depends_on:
+      mssql:
+        condition: service_healthy
+      # Wait for tuning so the schema/index build also honours MAXDOP = 4.
+      mssql-tune:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '8'
+          memory: 24G
+    environment:
+      DataStore: "SqlServer"
+      # Auth disabled to match the other servers (the k6 tests hit FHIR unauthenticated).
+      FHIRServer__Security__Enabled: "false"
+      # Newer :latest images construct SecurityProvider unconditionally and throw
+      # ArgumentNullException on a null Authority even when Security is disabled,
+      # which breaks the startup CapabilityStatement and makes EVERY request 500.
+      # A placeholder Authority/Audience satisfies the constructor; neither is used
+      # for auth while Enabled=false.
+      FHIRServer__Security__Authentication__Authority: "https://localhost"
+      FHIRServer__Security__Authentication__Audience: "https://localhost"
+      FHIRServer__Bundle__MaxExecutionTimeInSeconds: "900"
+      # Raise the transaction-bundle entry cap (FhirServer:Bundle:EntryLimit,
+      # default 500). The Synthea import bundles run up to ~2.6k entries each;
+      # aidbox/hapi/medplum impose no such cap, so without this MS FHIR 400s every
+      # import. 100k = effectively unlimited for this dataset, keeping it fair.
+      FHIRServer__Bundle__EntryLimit: "100000"
+      # Disable audit logging. MS FHIR has no on/off switch for it (FhirServer:Audit
+      # only sets a header prefix); it logs two AuditEvent entries per request via
+      # the IAuditLogger category at Information level. Silencing that log category
+      # turns the audit log off — removes the per-request logging overhead/noise
+      # under load. The other servers don't emit per-request audit logs either.
+      Logging__LogLevel__Microsoft.Health.Fhir.Core.Features.Audit.IAuditLogger: "None"
+      # Max Pool Size=32 matches aidbox (32) and HAPI's HikariCP (32); ADO.NET
+      # would otherwise default to 100, giving MS FHIR an unfair connection budget.
+      SqlServer__ConnectionString: "Server=tcp:mssql,1433;Initial Catalog=FHIR;Persist Security Info=False;User ID=sa;Password=Fhir_Perf_2026!;MultipleActiveResultSets=False;Connection Timeout=30;TrustServerCertificate=true;Max Pool Size=32;Min Pool Size=4;"
+      SqlServer__AllowDatabaseCreation: "true"
+      SqlServer__Initialize: "true"
+      SqlServer__SchemaOptions__AutomaticUpdatesEnabled: "true"
+    ports:
+      - "13100:8080"
+
+  # Sidecar healthcheck (mirrors hapi-checker): the .NET runtime image has no curl,
+  # so probe /health/check from a curl container instead. Require overallStatus
+  # "Healthy": the endpoint answers 200 for "Degraded" too, which is what it
+  # reports for the first 5 min while storage is (or is failing to) initialize.
+  microsoft-checker:
+    container_name: perf-microsoft-hc
+    image: curlimages/curl
+    command: ["-c", "trap : TERM INT; sleep infinity & wait"]
+    depends_on:
+      microsoft:
+        condition: service_started
+    entrypoint: /bin/sh
+    healthcheck:
+      test: curl -fsS --max-time 5 http://microsoft:8080/health/check | grep -q '"overallStatus":"Healthy"'
+      interval: 10s
+      start_period: 40s
+      retries: 30
+
+  # Prometheus exporter for SQL Server internals (DB size, transactions, page
+  # life expectancy, connections, I/O stalls) — the MSSQL counterpart to
+  # postgres-exporter, so the Microsoft FHIR datastore is visible in Grafana
+  # alongside the Postgres-backed servers. Scraped by Prometheus on :4000.
+  mssql-exporter:
+    container_name: perf-mssql-exporter
+    image: awaragi/prometheus-mssql-exporter:latest
+    pull_policy: always
+    depends_on:
+      mssql:
+        condition: service_healthy
+    environment:
+      SERVER: mssql
+      PORT: "1433"
+      USERNAME: sa
+      PASSWORD: "Fhir_Perf_2026!"
+      ENCRYPT: "true"
+      TRUST_SERVER_CERTIFICATE: "true"
+      EXPOSE: "4000"
+
+## ------------------------------------------------
+## K6 test runner and tgz service fo import tests
+## ------------------------------------------------
   k6:
     container_name: perf-k6
     image: grafana/k6
@@ -258,6 +495,12 @@ services:
       hapi-checker:
         condition: service_healthy
       octofhir:
+        condition: service_healthy
+      wso2-checker:
+        condition: service_healthy
+      microsoft-checker:
+        condition: service_healthy
+      intersystems:
         condition: service_healthy
     profiles:
       - donotstart

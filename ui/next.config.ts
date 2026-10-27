@@ -20,17 +20,9 @@ const nextConfig: NextConfig = {
   
   // Handle trailing slashes
   trailingSlash: true,
-  
-  // Disable ESLint during build (temporary fix for linting errors)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
-  // Disable server-side features
-  // This ensures the app works as a pure SPA
-  experimental: {
-    // Ensure client-side navigation works properly
-  }
+  // NOTE: Next 16 removed the `eslint` key from NextConfig (and no longer runs
+  // ESLint during `next build`), so the old `eslint.ignoreDuringBuilds` block was
+  // dropped — under Next 16 it was a type error that broke the production build.
 };
 
 export default nextConfig;

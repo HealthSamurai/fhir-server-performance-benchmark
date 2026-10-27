@@ -173,6 +173,25 @@ function validateBenchmarkDataPoint(dataPoint: any, suiteIndex: number, dataInde
     throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: hapi must be a number`);
   }
 
+  // microsoft was added after the first reports were snapshotted; treat it as
+  // optional and default to 0 so historical SNAPSHOT_*.json (which predate it)
+  // still parse. When present it must still be a number.
+  if ('microsoft' in dataPoint && typeof dataPoint.microsoft !== 'number') {
+    throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: microsoft must be a number`);
+  }
+
+  // wso2 was added even later; same treatment as microsoft so older
+  // SNAPSHOT_*.json still parse.
+  if ('wso2' in dataPoint && typeof dataPoint.wso2 !== 'number') {
+    throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: wso2 must be a number`);
+  }
+
+  // intersystems was added after wso2; same treatment so older SNAPSHOT_*.json
+  // still parse.
+  if ('intersystems' in dataPoint && typeof dataPoint.intersystems !== 'number') {
+    throw new Error(`Invalid data point ${dataIndex} in suite ${suiteIndex}: intersystems must be a number`);
+  }
+
   // Backwards compatibility: older reports have no octofhir field; treat as 0.
   const octofhir = typeof dataPoint.octofhir === 'number' ? dataPoint.octofhir : 0;
 
@@ -181,6 +200,9 @@ function validateBenchmarkDataPoint(dataPoint: any, suiteIndex: number, dataInde
     aidbox: dataPoint.aidbox,
     medplum: dataPoint.medplum,
     hapi: dataPoint.hapi,
+    microsoft: dataPoint.microsoft ?? 0,
+    wso2: dataPoint.wso2 ?? 0,
+    intersystems: dataPoint.intersystems ?? 0,
     octofhir,
   };
 }
@@ -232,7 +254,7 @@ function validateTestCase(testCase: any, suiteIndex: number, testIndex: number) 
  * Get all server names from a benchmark report
  */
 export function getServerNames(report: BenchmarkReport): ServerName[] {
-  return ['aidbox', 'medplum', 'hapi', 'octofhir'];
+  return ['aidbox', 'medplum', 'hapi', 'microsoft', 'wso2', 'intersystems', 'octofhir'];
 }
 
 /**

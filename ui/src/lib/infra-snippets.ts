@@ -169,6 +169,33 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
         fileSnippet("infra/medplum/config.json", "json", undefined, 60),
       ],
     },
+    microsoft: {
+      id: "microsoft",
+      title: "Microsoft FHIR Server",
+      description:
+        "The .NET (R4) FHIR server from Microsoft. Unlike the others it only supports SQL Server / Cosmos DB, so it runs against a dedicated SQL Server (mssql) rather than the shared PostgreSQL.",
+      snippets: [compose("microsoft")],
+    },
+    wso2: {
+      id: "wso2",
+      title: "WSO2 FHIR Server",
+      description:
+        "Go-based FHIR server from WSO2, shipped as a single static binary. Runs against the shared PostgreSQL (wso2 database); health probed on /health/ready via a curl sidecar.",
+      snippets: [compose("wso2")],
+    },
+    intersystems: {
+      id: "intersystems",
+      title: "InterSystems IRIS for Health",
+      description:
+        "IRIS for Health Community Edition, set up like intersystems-community/iris-fhir-template (FHIRSERVER namespace, JsonAdvSql storage, /fhir/r4). FHIR data lives in IRIS's embedded database, so one container is both app and datastore. The FHIR server is installed on first start; buffers are sized via a CPF merge file, and the bundled web server caps concurrent requests at 16 (httpd-local.conf). Native Prometheus endpoint at /api/monitor/metrics.",
+      snippets: [
+        compose("intersystems"),
+        fileSnippet("infra/intersystems/fhir-server.sh", "bash"),
+        fileSnippet("infra/intersystems/merge.cpf", "conf"),
+        fileSnippet("infra/intersystems/httpd-local.conf", "conf"),
+        fileSnippet("infra/intersystems/gather-stats.sh", "bash"),
+      ],
+    },
     postgres: {
       id: "postgres",
       title: "PostgreSQL 18",
@@ -176,6 +203,16 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
       snippets: [
         compose("postgres"),
         fileSnippet("infra/postgres/postgres.conf", "conf", undefined, 100),
+      ],
+    },
+    mssql: {
+      id: "mssql",
+      title: "SQL Server 2022",
+      description:
+        "Dedicated datastore for the Microsoft FHIR server (Developer edition). Tuned for the benchmark load via tune.sql — MAXDOP, cost threshold, and one tempdb file per core — applied by a one-shot mssql-tune sidecar.",
+      snippets: [
+        compose("mssql"),
+        fileSnippet("infra/mssql/tune.sql", "sql"),
       ],
     },
     redis: {
@@ -210,6 +247,12 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
       title: "postgres-exporter",
       description: "Exposes PostgreSQL internals as Prometheus metrics on :9187.",
       snippets: [compose("postgres-exporter")],
+    },
+    "mssql-exporter": {
+      id: "mssql-exporter",
+      title: "mssql-exporter",
+      description: "The SQL Server counterpart to postgres-exporter — exposes the Microsoft FHIR datastore's internals (DB size, transactions, page life expectancy, I/O stalls) as Prometheus metrics on :4000.",
+      snippets: [compose("mssql-exporter")],
     },
     "otel-collector": {
       id: "otel-collector",

@@ -5,13 +5,15 @@ set -e
 # CLI utility for running FHIR server performance tests
 # Usage: ./runner.sh [-t test] [-s server] [-id runId]
 #   -t test: path to test file (e.g., /test/crud.js, /test/search.js)
-#   -s server: target server: aidbox, hapi, medplum, octofhir (optional - runs on all servers if not specified)
+#   -s server: target server: octofhir, aidbox, hapi, medplum, microsoft, wso2, intersystems (optional - runs on all servers if not specified)
 #   -id runId: custom run ID (optional - defaults to current UTC timestamp)
 
 # Default values
 DEFAULT_TEST="/k6/prewarm.js"
 # Override with SERVERS="octofhir aidbox" to benchmark a subset.
-ALL_SERVERS="${SERVERS:-octofhir aidbox hapi medplum}"
+ALL_SERVERS="${SERVERS:-octofhir aidbox hapi medplum microsoft wso2 intersystems}"
+# How long to wait for the target server to become healthy before a test (seconds)
+WAIT_TIMEOUT=${WAIT_TIMEOUT:-600}
 
 # Function to display usage
 show_usage() {
@@ -23,7 +25,7 @@ show_usage() {
     echo ""
     echo "Arguments:"
     echo "  -t test    Path to test file (e.g., /k6/crud.js, /k6/search.js)"
-    echo "  -s server  Target server: aidbox, hapi, medplum, octofhir"
+    echo "  -s server  Target server: octofhir, aidbox, hapi, medplum, microsoft, wso2, intersystems"
     echo "  -id runId  Custom run ID (optional - defaults to current UTC timestamp)"
     echo "  -f file    Docker Compose file(s) to use (can be specified multiple times)"
     echo "             If not specified, uses the default docker-compose.yaml"
@@ -89,6 +91,47 @@ validate_server() {
     esac
 }
 
+# Service whose healthcheck gates a server's tests: the server itself, or its
+# curl sidecar for images that ship no curl (hapi, wso2, microsoft)
+health_service() {
+    case $1 in
+        hapi|wso2|microsoft) echo "$1-checker" ;;
+        *) echo "$1" ;;
+    esac
+}
+
+# Function to wait until every container of the server's health service is healthy.
+# An unhealthy container flips back to healthy on its next passing probe, so keep
+# polling until the deadline instead of failing on the first "unhealthy".
+wait_for_server() {
+    local server=$1
+    local service=$(health_service "$server")
+    local deadline=$(( $(date +%s) + WAIT_TIMEOUT ))
+    local ids states
+
+    while :; do
+        ids=$(docker compose $COMPOSE_FILES ps -q "$service" 2>/dev/null || true)
+        states=""
+        if [ -n "$ids" ]; then
+            states=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' $ids 2>/dev/null || true)
+        fi
+
+        if [ -n "$states" ] && ! echo "$states" | grep -qv '^healthy$'; then
+            return 0
+        fi
+
+        if [ "$(date +%s)" -ge "$deadline" ]; then
+            echo "❌ $service is not healthy after ${WAIT_TIMEOUT}s (state: $(echo ${states:-missing}))"
+            docker compose $COMPOSE_FILES ps -a
+            docker compose $COMPOSE_FILES logs --tail 200 "$server"
+            return 1
+        fi
+
+        echo "Waiting for $service to become healthy (state: $(echo ${states:-missing}))..."
+        sleep 10
+    done
+}
+
 # Function to run test on a specific server
 run_test_on_server() {
     local test_path=$1
@@ -97,6 +140,7 @@ run_test_on_server() {
 
     local run_env="
         export BUNDLE_URL=http://tgz:8080
+        export FHIRIMPL=${server}
         export K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
         export K6_PROMETHEUS_RW_TREND_STATS='p(95),p(99),min,max'"
 
@@ -116,6 +160,18 @@ run_test_on_server() {
             run_env="${run_env}
                 export BASE_URL=http://hapi:8080/fhir"
             ;;
+        "wso2")
+            run_env="${run_env}
+                export BASE_URL=http://wso2:9090/fhir/r4"
+            ;;
+        "intersystems")
+            run_env="${run_env}
+                export BASE_URL=http://intersystems:52773/fhir/r4
+                export AUTH_USER=fhir
+                export AUTH_PASSWORD=fhir
+                export CONTENT_TYPE=application/fhir+json
+                export PREFER=return=representation"
+            ;;
         "medplum")
             run_env="${run_env}
                 export BASE_URL=http://medplum:8103/fhir/R4
@@ -128,14 +184,24 @@ run_test_on_server() {
             run_env="${run_env}
                 export BASE_URL=http://octofhir:8888/fhir"
             ;;
+        "microsoft")
+            run_env="${run_env}
+                export BASE_URL=http://microsoft:8080"
+            ;;
     esac
+
+    # Gate on the target server only. k6's depends_on lists every server, so a
+    # plain `compose run` would re-check all of them and abort this server's test
+    # whenever any other one is unhealthy; --no-deps skips that (bootstrap has
+    # already brought the whole stack up).
+    wait_for_server "$server"
 
     # TODO: quiet  for docker compose and k6
 
     if [ -n "$CI" ]; then
-        docker compose $COMPOSE_FILES run -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run --quiet $k6_args $test_path"
+        docker compose $COMPOSE_FILES run --no-deps -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run --quiet $k6_args $test_path"
     else
-        docker compose $COMPOSE_FILES run -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run $k6_args $test_path"
+        docker compose $COMPOSE_FILES run --no-deps -q --rm --entrypoint /bin/sh k6 -c "$run_env && k6 run $k6_args $test_path"
     fi
 
     echo ""

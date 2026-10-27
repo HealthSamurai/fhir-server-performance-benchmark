@@ -20,7 +20,7 @@ export const options = {
     crud: {
       executor: 'constant-vus',
       vus: Number(__ENV.VUS) || 300,
-      duration: __ENV.DURATION || '5m',
+      duration: __ENV.DURATION || '4m',
       gracefulStop: '30s',
     },
   },
@@ -194,6 +194,8 @@ export default function ({ baseUrl, params, seeds }) {
           null,
           { ...params, responseType: 'none', tags: { name: `${rt}/?` } }
         )
+        // FHIR DELETE is spec'd to return 200 (with an OperationOutcome) or
+        // 204 (no content); aidbox/hapi/medplum answer 200, MS FHIR answers 204.
         check(x, { [`${rt} delete`]: ({ status }) => status === 200 || status === 204 })
       })
     })

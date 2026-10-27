@@ -66,17 +66,27 @@ const oauth2 = () => {
   return {"Authorization": `Bearer ${token.json('access_token')}` }
 }
 
+const base64 = (user, pass) =>  user && pass ? `Basic ${b64encode(`${user}:${pass}`)}` : null
+
+const basicAuth = () => {
+  const auth = base64(__ENV.AUTH_USER, __ENV.AUTH_PASSWORD)
+  return auth ? { "Authorization": auth } : null
+}
+
 export function headers() {
   return {
-    ...oauth2(),
+    ...(oauth2() || basicAuth()),
     "Accept-Encoding": "gzip",
     "Accept": "application/json",
-    "Content-Type": "application/json",
+    // IRIS for Health answers 415 to application/json request bodies (it only
+    // takes application/fhir+json) and returns an empty body on create/update
+    // unless asked for the resource, which crud.js reads the id from. The other
+    // servers keep plain JSON and return the resource by default.
+    "Content-Type": __ENV.CONTENT_TYPE || "application/json",
+    ...(__ENV.PREFER ? { "Prefer": __ENV.PREFER } : {}),
     "Cache-Control": "no-cache",
   }
 }
-
-const base64 = (user, pass) =>  user && pass ? `Basic ${b64encode(`${user}:${pass}`)}` : null
 
 export default function() {
   const user = __ENV.AUTH_USER

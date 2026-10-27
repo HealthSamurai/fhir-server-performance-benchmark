@@ -16,6 +16,14 @@ function isOkTimed(name, url, params) {
 
 export const options = {
   discardResponseBodies: true,
+  // setup() runs real search queries (expandReferences -> sampleIds) against the
+  // freshly-imported, cold dataset to pull live ids. On the slower servers
+  // (medplum) those sampling queries blow past k6's default 60s setupTimeout,
+  // which aborts the whole run and leaves that server with zero search metrics
+  // (aidbox/hapi finish in time, so only medplum silently disappears). This is a
+  // ceiling only, so raising it is harmless for the fast servers — mirrors the
+  // same fix in import.js.
+  setupTimeout: '600s',
   scenarios: {
     search: {
 

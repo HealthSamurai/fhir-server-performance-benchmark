@@ -47,6 +47,9 @@
   --color-aidbox: #f0724c;
   --color-medplum: #5c85d6;
   --color-hapi: #59c05c;
+  --color-microsoft: #8661c5;
+  --color-wso2: #ff7300;
+  --color-intersystems: #00b2a9;
   --color-octofhir: #9d6edd;
   --radius: 0.625rem;
   --background: oklch(1 0 0);

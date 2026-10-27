@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { CodeBlock } from "@/components/CodeBlock";
 import type { NodeInfo } from "@/lib/infra-snippets";
@@ -82,29 +82,42 @@ const NODES: DiagramNode[] = [
   { id: "aidbox",            x: 40,  y: 200, w: 220, h: 78, title: "Aidbox",            subtitle: "JVM · :8080 · /metrics on :8379",  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/aidbox.svg` },
   { id: "hapi",              x: 380, y: 200, w: 220, h: 78, title: "HAPI FHIR",         subtitle: "JVM · /actuator/prometheus",       bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/hapi.png` },
   { id: "medplum",           x: 720, y: 200, w: 220, h: 78, title: "Medplum (×8)",      subtitle: "Node.js · :8103 · OAuth2",         bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/medplum.svg` },
+  { id: "microsoft",         x: 1060, y: 200, w: 220, h: 78, title: "Microsoft FHIR",    subtitle: ".NET R4 · :8080",                  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/microsoft.svg` },
+  { id: "wso2",              x: 1400, y: 200, w: 220, h: 78, title: "WSO2 FHIR",         subtitle: "Go · :9090",                       bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/wso2.svg` },
+  { id: "intersystems",      x: 1740, y: 200, w: 220, h: 78, title: "IrisHealth",        subtitle: "IRIS · :52773 · embedded DB",      bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/intersystems.png` },
   { id: "postgres",          x: 280, y: 330, w: 280, h: 74, title: "PostgreSQL 18",     subtitle: "shared · DB-per-server",           bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "postgresql" },
   { id: "redis",             x: 720, y: 330, w: 220, h: 74, title: "Redis",             subtitle: "Medplum sessions/cache",           bgColor: "#fee2e2", borderColor: "#dc2626", textColor: "#7f1d1d", iconSlug: "redis" },
+  { id: "mssql",             x: 1060, y: 330, w: 220, h: 74, title: "SQL Server 2022",   subtitle: "dedicated · Microsoft only",       bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconUrl: `${ASSET_BASE}/images/mssql.svg` },
   { id: "cadvisor",          x: 40,  y: 500, w: 220, h: 64, title: "cAdvisor",          subtitle: "container CPU / mem / I/O",        bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "googlecloud" },
   { id: "prometheus",        x: 380, y: 500, w: 220, h: 64, title: "Prometheus",        subtitle: "scrape + remote-write",            bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "prometheus" },
   { id: "otel-collector",    x: 720, y: 500, w: 220, h: 64, title: "OTel Collector",    subtitle: "OTLP → Prometheus exporter",       bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "opentelemetry" },
   { id: "postgres-exporter", x: 40,  y: 600, w: 220, h: 64, title: "postgres-exporter", subtitle: "PG internals",                     bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "postgresql" },
   { id: "grafana",           x: 380, y: 600, w: 220, h: 64, title: "Grafana",           subtitle: "dashboards · :13000",              bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "grafana" },
+  { id: "mssql-exporter",    x: 1060, y: 600, w: 220, h: 64, title: "mssql-exporter",   subtitle: "SQL Server internals",             bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconUrl: `${ASSET_BASE}/images/mssql.svg` },
 ];
 
 const EDGES: DiagramEdge[] = [
   { from: "k6", to: "aidbox",              color: "blue" },
   { from: "k6", to: "hapi",                color: "blue" },
   { from: "k6", to: "medplum",             color: "blue" },
+  { from: "k6", to: "microsoft",           color: "blue" },
+  { from: "k6", to: "wso2",                color: "blue" },
+  { from: "k6", to: "intersystems",        color: "blue" },
   { from: "k6", to: "tgz",                 color: "blue", dashed: true, label: "fetch dataset", fromSide: "right", toSide: "left" },
   { from: "aidbox",  to: "postgres",       color: "green" },
   { from: "hapi",    to: "postgres",       color: "green" },
   { from: "medplum", to: "postgres",       color: "green" },
+  { from: "wso2",    to: "postgres",       color: "green" },
+  { from: "microsoft", to: "mssql",        color: "green" },
   { from: "medplum", to: "redis",          color: "red" },
   { from: "aidbox", to: "prometheus",      color: "orange", dashed: true, curve: 0.4 },
   { from: "hapi",   to: "prometheus",      color: "orange", dashed: true },
+  { from: "intersystems", to: "prometheus", color: "orange", dashed: true, fromSide: "bottom", toSide: "right" },
   { from: "k6",     to: "prometheus",      color: "orange", dashed: true, curve: -0.5 },
   { from: "cadvisor", to: "prometheus",    color: "orange", fromSide: "right", toSide: "left" },
   { from: "postgres-exporter", to: "prometheus", color: "orange", curve: 0.3 },
+  { from: "mssql-exporter", to: "mssql",         color: "green",  dashed: true, fromSide: "top", toSide: "bottom" },
+  { from: "mssql-exporter", to: "prometheus",    color: "orange", curve: -0.3, fromSide: "left", toSide: "right" },
   { from: "prometheus", to: "grafana",     color: "orange" },
   { from: "medplum", to: "otel-collector", color: "orange", dashed: true },
   { from: "otel-collector", to: "prometheus", color: "orange", fromSide: "left", toSide: "right" },
@@ -149,7 +162,7 @@ function edgePath(a: { x: number; y: number }, b: { x: number; y: number }, curv
   return `M ${a.x} ${a.y} Q ${ctrl.x} ${ctrl.y} ${b.x} ${b.y}`;
 }
 
-const W = 980;
+const W = 2000;
 const H = 720;
 
 interface Props {
@@ -158,6 +171,8 @@ interface Props {
 
 export function InfraDiagram({ snippets }: Props) {
   const [active, setActive] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
 
   useEffect(() => {
     if (!active) return;
@@ -168,10 +183,30 @@ export function InfraDiagram({ snippets }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [active]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setScale(Math.min(1, el.clientWidth / W));
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <div>
-      <div className="overflow-x-auto flex justify-center">
-        <div className="relative" style={{ width: W, height: H, flexShrink: 0 }}>
+      <div ref={containerRef} className="overflow-x-auto flex justify-center">
+        <div
+          className="relative"
+          style={{
+            width: W,
+            height: H,
+            flexShrink: 0,
+            transform: `scale(${scale})`,
+            transformOrigin: "top center",
+            marginBottom: -(H * (1 - scale)),
+          }}
+        >
           <svg
             className="absolute inset-0 pointer-events-none"
             width={W}
@@ -198,7 +233,7 @@ export function InfraDiagram({ snippets }: Props) {
             <rect
               x={20}
               y={470}
-              width={940}
+              width={1260}
               height={220}
               rx={10}
               ry={10}

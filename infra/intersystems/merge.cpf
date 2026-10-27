@@ -1,0 +1,18 @@
+# Applied at every start via ISC_CPF_MERGE_FILE (analogous to
+# infra/postgres/postgres.conf). Without explicit sizes IRIS auto-selects 25% of
+# the *host* memory for global buffers, which overshoots the container limit.
+[config]
+# 8K-block global buffers (MB) — the IRIS database cache, like Postgres'
+# shared_buffers / SQL Server's buffer pool.
+globals=0,0,24000,0,0,0
+# Routine buffers (MB) and generic memory heap (KB).
+routines=2048
+gmheap=1048576
+
+# Wait for the journal write to reach disk before a commit returns — the same
+# durability as PostgreSQL's default synchronous_commit=on (the other servers'
+# datastore) and SQL Server's full durability. IRIS defaults to 0: TCOMMIT
+# returns once the journal record is buffered and the journal daemon writes it
+# out shortly after, which would give IRIS a head start on every write.
+[Miscellaneous]
+SynchCommit=1

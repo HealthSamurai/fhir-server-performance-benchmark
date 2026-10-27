@@ -22,9 +22,6 @@ volumes:
 - name: search-dataset
   host:
     path: /var/data/storage/pgdata/perf-test-search
-- name: zfs
-  host:
-    path: /tank
 
 services:
 - name: dind
@@ -95,6 +92,22 @@ steps:
         profiles: [ donotstart ]
       redis:
         profiles: [ donotstart ]
+      mssql:
+        profiles: [ donotstart ]
+      mssql-tune:
+        profiles: [ donotstart ]
+      mssql-exporter:
+        profiles: [ donotstart ]
+      microsoft:
+        profiles: [ donotstart ]
+      microsoft-checker:
+        profiles: [ donotstart ]
+      wso2:
+        profiles: [ donotstart ]
+      wso2-checker:
+        profiles: [ donotstart ]
+      intersystems:
+        profiles: [ donotstart ]
       k6:
         depends_on: !override
           aidbox:
@@ -142,39 +155,9 @@ steps:
     path: /tmp/workspace
   - name: search-dataset
     path: /var/lib/search-dataset
-  - name: zfs
-    path: /tank
   commands:
   ## Setup RUNID
   - export RUNID=$(cat /tmp/workspace/run-id)
-  
-  ## Setup ZFS pool operations
-  -  zpool import -a 2>/dev/null || true
-  - |
-    if zpool list | grep -q tank; then
-      echo "Pool  `tank` found"
-    else
-      echo "Pool `tank` not found"
-      exit 1
-    fi
-  # ### Create snapshot from default for search and import tests
-  # - |
-  #   SNAPSHOT_NAME="tank/default@ci-default-$RUNID"
-  #   CLONE_NAME="tank/ci-default-clone-$RUNID"
-  #   zfs snapshot -r $SNAPSHOT_NAME
-  #   zfs clone $SNAPSHOT_NAME $CLONE_NAME
-  #   zfs set mountpoint=/tmp/default $CLONE_NAME
-
-  # ### Create snapshot from goldet for search tests 
-  # - |
-  #   SNAPSHOT_NAME="tank/golden@ci-$RUNID"
-  #   CLONE_NAME="tank/ci-golden-clone-$RUNID"
-  #   zfs snapshot -r $SNAPSHOT_NAME
-  #   zfs clone $SNAPSHOT_NAME $CLONE_NAME
-  #   zfs set mountpoint=/tmp/golden $CLONE_NAME
-    
-  # # Verify mount
-  # - zfs list -o name,mounted,mountpoint | grep ci- || true
 
   ## GCP auth
   - printf "%s" "$DRONE_CI_GCP_SA" > /tmp/key.json
@@ -194,6 +177,8 @@ steps:
   - ./runner.sh -t /k6/import.js
     ## Force refresh PG stats
   - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
+    ## Same for InterSystems IRIS: SQL table statistics of the FHIR storage
+  - docker exec perf-intersystems /opt/intersystems/gather-stats.sh
   - ./runner.sh -t /k6/search.js
 
   ## Record test end time (RUNID is the start time set in the configure step)
@@ -202,27 +187,6 @@ steps:
   ## Cleanup
   - sleep 120
   - docker compose down -v
-  
-  # ## Cleanup ZFS clone
-  # - |
-  #   if command -v zfs >/dev/null 2>&1 && zfs list | grep "tank/ci-"; then
-  #     echo "Cleaning up ZFS clones..."
-  #     for clone in $(zfs list -H -o name | grep "tank/ci-clone"); do
-  #       echo "Destroying clone: $clone"
-  #       zfs destroy -r $clone || true
-  #     done
-  #   fi
-  # ## ----------------------------------------------------
-
-  # ## Run infra for search tests
-  # - ./runner.sh bootstrap -f ci_search_suite.yaml -f docker-compose.override.yml
-  # - ./runner.sh -t /k6/search.js -f ci_search_suite.yaml -f docker-compose.override.yml
-  # ## Cleanup
-  # - sleep 120
-  # - docker compose down -v
-  # ## ----------------------------------------------------
-
-  ## Wait metrics tail
 
 - name: snapshot
   environment:

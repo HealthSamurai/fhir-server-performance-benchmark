@@ -18,6 +18,9 @@ const serverIcons = {
   aidbox: `${basePath}/images/aidbox.svg`,
   medplum: `${basePath}/images/medplum.svg`,
   hapi: `${basePath}/images/hapi.png`,
+  microsoft: `${basePath}/images/microsoft.svg`,
+  wso2: `${basePath}/images/wso2.svg`,
+  intersystems: `${basePath}/images/intersystems.png`,
   octofhir: `${basePath}/images/octofhir.png`
 }
 
@@ -26,6 +29,9 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
     aidbox: { wins: 0, avgRps: 0 },
     medplum: { wins: 0, avgRps: 0 },
     hapi: { wins: 0, avgRps: 0 },
+    microsoft: { wins: 0, avgRps: 0 },
+    wso2: { wins: 0, avgRps: 0 },
+    intersystems: { wins: 0, avgRps: 0 },
     octofhir: { wins: 0, avgRps: 0 }
   }
 
@@ -33,6 +39,9 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
     aidbox: 0,
     medplum: 0,
     hapi: 0,
+    microsoft: 0,
+    wso2: 0,
+    intersystems: 0,
     octofhir: 0
   }
 
@@ -45,6 +54,9 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
         aidbox: testCase.data.reduce((sum: number, dp: any) => sum + dp.aidbox, 0) / testCase.data.length,
         medplum: testCase.data.reduce((sum: number, dp: any) => sum + dp.medplum, 0) / testCase.data.length,
         hapi: testCase.data.reduce((sum: number, dp: any) => sum + dp.hapi, 0) / testCase.data.length,
+        microsoft: testCase.data.reduce((sum: number, dp: any) => sum + dp.microsoft, 0) / testCase.data.length,
+        wso2: testCase.data.reduce((sum: number, dp: any) => sum + dp.wso2, 0) / testCase.data.length,
+        intersystems: testCase.data.reduce((sum: number, dp: any) => sum + dp.intersystems, 0) / testCase.data.length,
         octofhir: testCase.data.reduce((sum: number, dp: any) => sum + dp.octofhir, 0) / testCase.data.length
       }
 
