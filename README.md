@@ -116,3 +116,4 @@ Search
 - [x] Complex search (composite, reference, modifiers, prefixes)
 test
 octofhir-server 7fdd671 (sha256:d370b840)
+octofhir: run image 74c36d9 (composite same-element hull, quantity eq buckets)
