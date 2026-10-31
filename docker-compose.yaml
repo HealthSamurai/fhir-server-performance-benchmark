@@ -179,11 +179,11 @@ services:
       # `http://loinc.org|<code>` forms are listed (the query containment differs).
       # Empty by default in the product — this is a benchmark-tuned opt-in.
       OCTOFHIR__SEARCH__COMPOSITE_INDEXES: 'Observation.code-value-quantity=|8867-4,Observation.code-value-quantity=|8302-2,Observation.code-value-quantity=|29463-7,Observation.code-value-quantity=|39156-5,Observation.code-value-quantity=|2339-0,Observation.code-value-quantity=|2947-0,Observation.code-value-quantity=http://loinc.org|8867-4,Observation.code-value-quantity=http://loinc.org|8302-2,Observation.code-value-quantity=http://loinc.org|39156-5,Observation.combo-code-value-quantity=|8867-4,Observation.combo-code-value-quantity=|8480-6,Observation.combo-code-value-quantity=|8302-2,Observation.combo-code-value-quantity=|29463-7,Observation.combo-code-value-quantity=|39156-5,Observation.combo-code-value-quantity=http://loinc.org|8480-6,Observation.component-code-value-quantity=|8480-6,Observation.component-code-value-quantity=|8462-4,Observation.component-code-value-quantity=http://loinc.org|8480-6,Observation.component-code-value-quantity=http://loinc.org|8462-4'
-      # At most 20 searches run against PostgreSQL at once (2.5x its 8-CPU
-      # quota); the rest wait in FIFO order. 30 VUs on a 32-connection pool
-      # oversubscribe the quota and stall in-flight queries until the next CFS
-      # period, which set the flat ~65 ms search p99. Writes are not limited.
-      OCTOFHIR__SEARCH__MAX_CONCURRENT_QUERIES: '20'
+      # At most 12 searches run against PostgreSQL at once (1.5x its 8-CPU
+      # quota); the rest wait in FIFO order. More concurrent queries
+      # oversubscribe the quota and stall in-flight ones until the next CFS
+      # period: at 20 the search p99 stayed flat at ~55 ms. Writes are not limited.
+      OCTOFHIR__SEARCH__MAX_CONCURRENT_QUERIES: '12'
       OCTOFHIR__AUTH__POLICY__ANONYMOUS_ACCESS: 'true'
       OCTOFHIR__AUTH__POLICY__DEFAULT_DENY: 'false'
       OCTOFHIR__TERMINOLOGY__SERVER_URL: https://tx.health-samurai.io/fhir
