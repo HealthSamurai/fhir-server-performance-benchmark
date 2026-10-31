@@ -177,12 +177,6 @@ steps:
   - ./runner.sh -t /k6/import.js
     ## Force refresh PG stats
   - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
-    ## Same for InterSystems IRIS: SQL table statistics of the FHIR storage
-    ## (this branch keeps IRIS out of the run, so only when it is up)
-  - |
-    if [ -n "$(docker ps -q -f name=^perf-intersystems$)" ]; then
-      docker exec perf-intersystems /opt/intersystems/gather-stats.sh
-    fi
   - ./runner.sh -t /k6/search.js
 
   ## Record test end time (RUNID is the start time set in the configure step)
