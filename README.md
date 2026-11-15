@@ -119,3 +119,4 @@ octofhir-server 7fdd671 (sha256:d370b840)
 octofhir: run image 74c36d9 (composite same-element hull, quantity eq buckets)
 octofhir: run image 6eb57bc (date ge/le recheck), search limiter 12
 octofhir: run image fa694b6 (Encounter.status btree, combo composite one-clause predicate), document GIN narrowed
+triggerr
