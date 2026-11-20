@@ -120,3 +120,4 @@ octofhir: run image 74c36d9 (composite same-element hull, quantity eq buckets)
 octofhir: run image 6eb57bc (date ge/le recheck), search limiter 12
 octofhir: run image fa694b6 (Encounter.status btree, combo composite one-clause predicate), document GIN narrowed
 triggerr
+octofhir: run image `ghcr.io/octofhir/octofhir-server@sha256:112925e9cbf051f9168ca12b1ca7829d10de6bf0a07af74690d0811a3a169533` (Bundle validation and JSON decoding)
