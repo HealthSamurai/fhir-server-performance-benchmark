@@ -5,12 +5,14 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight, Server, Activity, ArrowRight } from "lucide-react";
 import { BranchSelector } from "@/components/BranchSelector";
 import { Header } from "@/components/Header";
+import type { ServerName } from "@/types/benchmark.types";
 
 const PAGE_SIZE = 10;
 
 const ASSET_BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";
 
-const SERVERS: { key: "aidbox" | "medplum" | "hapi" | "microsoft" | "wso2" | "intersystems"; label: string; icon: string }[] = [
+const SERVERS: { key: ServerName; label: string; icon: string }[] = [
+  { key: "octofhir", label: "OctoFHIR", icon: `${ASSET_BASE}/images/octofhir.png` },
   { key: "aidbox", label: "Aidbox", icon: `${ASSET_BASE}/images/aidbox.svg` },
   { key: "medplum", label: "Medplum", icon: `${ASSET_BASE}/images/medplum.svg` },
   { key: "hapi", label: "HAPI", icon: `${ASSET_BASE}/images/hapi.png` },
@@ -23,7 +25,8 @@ interface SuiteRow {
   label: string;
   unit: string; // "ms" | "rps" | ...
   lowerBetter: boolean;
-  values: { aidbox: number; medplum: number; hapi: number; microsoft: number; wso2: number; intersystems: number };
+  notSupported: string[];
+  values: Record<ServerName, number>;
 }
 
 interface RunSummaryData {
@@ -46,14 +49,14 @@ function formatRps(v: number): string {
 }
 
 function computeSummary(report: any): RunSummaryData {
-  const servers: ("aidbox" | "medplum" | "hapi" | "microsoft" | "wso2" | "intersystems")[] = ["aidbox", "medplum", "hapi", "microsoft", "wso2", "intersystems"];
-
   // Each suite carries the real measured throughput in result.data (the "Total"
   // RPS per server) — no need to derive anything from latency.
   const rows: SuiteRow[] = (report?.suites || []).map((suite: any) => {
     // Import is throughput of imported *resources*, not HTTP requests: result.data
     // holds requests/sec (~3.5), while the test case holds resources/sec (~2779).
     const isImport = String(suite?.name || "").toLowerCase().includes("import");
+    // Bulk export is data throughput: result.data holds MB/s per server.
+    const isExport = String(suite?.name || "").toLowerCase().includes("export");
 
     const total = isImport
       ? (suite?.test_cases?.[0]?.data?.[0] || {})
@@ -63,9 +66,11 @@ function computeSummary(report: any): RunSummaryData {
 
     return {
       label: shortSuiteLabel(suite?.name),
-      unit: isImport ? "res/s" : "rps",
+      unit: isImport ? "res/s" : isExport ? "MB/s" : "rps",
       lowerBetter: false,
+      notSupported: Array.isArray(suite?.not_supported) ? suite.not_supported : [],
       values: {
+        octofhir: total.octofhir || 0,
         aidbox: total.aidbox || 0,
         medplum: total.medplum || 0,
         hapi: total.hapi || 0,
@@ -291,7 +296,7 @@ export default function Home() {
                 Performance Benchmark Dashboard
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Comparing performance metrics across FHIR servers — Aidbox, Medplum, HAPI, Microsoft FHIR, WSO2 FHIR, and InterSystems IRIS for Health
+                Comparing performance metrics across FHIR servers, including OctoFHIR, Aidbox, Medplum, HAPI, Microsoft FHIR, WSO2 FHIR, and InterSystems IRIS for Health
               </p>
             </div>
 
@@ -415,12 +420,14 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
     return <span className="hidden md:inline text-xs text-gray-400">no data</span>;
   }
 
+  const servers = SERVERS.filter(({ key }) => key !== "octofhir" || summary.rows.some((row) => row.values.octofhir > 0));
+
   return (
     <table className="hidden md:table table-fixed text-xs tabular-nums border-collapse">
       <thead>
         <tr className="text-gray-700 border-b border-gray-200">
           <th className="font-normal text-left pr-3 pb-1.5 w-24" />
-          {SERVERS.map((s) => (
+          {servers.map((s) => (
             <th key={s.key} className="font-semibold text-right px-2 pb-1.5 w-24">
               <span className="inline-flex items-center justify-end gap-1.5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -433,7 +440,7 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
       </thead>
       <tbody>
         {summary.rows.map((row) => {
-          const vals = SERVERS.map((s) => row.values[s.key]);
+          const vals = servers.map((s) => row.values[s.key]);
           const positive = vals.filter((v) => v > 0);
           const best = positive.length
             ? row.lowerBetter
@@ -445,9 +452,16 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
               <td className="text-left text-gray-700 font-medium pr-3 py-0.5 w-24 whitespace-nowrap">
                 {row.label} <span className="text-gray-400 font-normal">{row.unit}</span>
               </td>
-              {SERVERS.map((s) => {
+              {servers.map((s) => {
                 const v = row.values[s.key];
                 const isBest = best !== null && v === best && v > 0;
+                if (row.notSupported.includes(s.key)) {
+                  return (
+                    <td key={s.key} className="text-right px-2 py-0.5 w-24 text-gray-400 whitespace-nowrap">
+                      Not supported
+                    </td>
+                  );
+                }
                 return (
                   <td
                     key={s.key}

@@ -101,6 +101,12 @@ function getTotalRPS(results, precision = 0) {
     return [dataPoint];
 }
 
+// Servers without a usable FHIR Bulk Data $export; runner.sh skips them for
+// k6/export.js, and the report shows "Not supported" instead of a zero.
+//   wso2         — not implemented (checked on 2.2.0)
+//   intersystems — no $export on the FHIR endpoint (needs a Bulk FHIR Coordinator)
+const EXPORT_NOT_SUPPORTED = ['wso2', 'intersystems'];
+
 // Main conversion function
 export function convertSourceToBenchmarkReport(
     sourceData,
@@ -219,6 +225,61 @@ export function convertSourceToBenchmarkReport(
         }
 
         suites.push(searchSuite);
+    }
+
+    // Convert Bulk export data (k6/export.js)
+    if (sourceData.export && sourceData.export.summary) {
+        const perServer = (result, scale = 1, precision = 0) => {
+            const data = {
+                category: 'Export',
+                aidbox: 0,
+                medplum: 0,
+                hapi: 0,
+                wso2: 0,
+                microsoft: 0,
+                intersystems: 0,
+                octofhir: 0
+            };
+            for (const r of result || []) {
+                if (r.metric.fhirimpl in data) {
+                    data[r.metric.fhirimpl] = parseFloat((parseFloat(r.value[1]) / scale).toFixed(precision));
+                }
+            }
+            return [data];
+        };
+
+        const exportSuite = {
+            name: 'Export',
+            description: 'FHIR Bulk Data $export of the whole dataset to NDJSON: OctoFHIR, Aidbox and Medplum write to S3 (RustFS), Microsoft FHIR to Azure Blob (Azurite), and HAPI to its own database',
+            not_supported: EXPORT_NOT_SUPPORTED,
+            result: {
+                label: 'Export throughput, MB per second (Higher is better)',
+                description: 'Size of the NDJSON output divided by the time from the $export kick-off to the completed manifest',
+                unit: 'MB/s',
+                data: getTotalRPS(sourceData.export.summary.data.result, 1)
+            },
+            test_cases: []
+        };
+
+        if (sourceData.export.duration) {
+            exportSuite.test_cases.push({
+                label: 'Export duration (Lower is better)',
+                description: 'Seconds from the $export kick-off to the completed manifest',
+                unit: 's',
+                data: perServer(sourceData.export.duration.data.result)
+            });
+        }
+
+        if (sourceData.export.size) {
+            exportSuite.test_cases.push({
+                label: 'Exported data',
+                description: 'Total size of the NDJSON output in MB (10^6 bytes)',
+                unit: 'MB',
+                data: perServer(sourceData.export.size.data.result, 1e6)
+            });
+        }
+
+        suites.push(exportSuite);
     }
 
     return {

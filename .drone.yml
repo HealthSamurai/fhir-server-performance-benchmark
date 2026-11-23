@@ -175,9 +175,10 @@ steps:
   - ./runner.sh -t /k6/prewarm.js
   - ./runner.sh -t /k6/crud.js
   - ./runner.sh -t /k6/import.js
-    ## Force refresh PG stats
-  - docker exec perf-postgres vacuumdb --analyze -j 50  -U postgres --all
   - ./runner.sh -t /k6/search.js
+  ## Bulk export last: it reads the whole dataset, which would warm every
+  ## server's caches for the suites above.
+  - ./runner.sh -t /k6/export.js
 
   ## Record test end time (RUNID is the start time set in the configure step)
   - date -u +"%Y-%m-%dT%H:%M:%SZ" > /tmp/workspace/end-time

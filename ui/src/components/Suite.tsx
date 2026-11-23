@@ -62,7 +62,7 @@ export function Suite({ suite }: { suite: BenchmarkSuite }) {
           <h3 className="text-lg font-medium text-gray-900">{suite.result.label}</h3>
           <div className="text-sm text-gray-600">{suite.result.description}</div>
           <br />
-          <ReportBarChart result={suite.result} size="small" />
+          <ReportBarChart result={suite.result} size="small" notSupported={suite.not_supported} />
         </CardContent>
 
       {suite.test_cases.length == 1 &&
@@ -77,7 +77,7 @@ export function Suite({ suite }: { suite: BenchmarkSuite }) {
                 </div>
               </div>
               <CardContent>
-                <ReportBarChart result={calculateAverageMetrics(testCase)} size="small" />
+                <ReportBarChart result={calculateAverageMetrics(testCase)} size="small" notSupported={suite.not_supported} />
               </CardContent>
             </div>
           ))
@@ -95,6 +95,7 @@ export function Suite({ suite }: { suite: BenchmarkSuite }) {
                     <h3 className="text-lg font-medium text-gray-900">Test Case: {testCase.label}</h3>
                     <div className="text-sm text-gray-600">{testCase.description}</div>
                   </div>
+                  {testCase.data.length > 1 && (
                   <button
                     type="button"
                     onClick={() => toggleCard(index)}
@@ -106,16 +107,17 @@ export function Suite({ suite }: { suite: BenchmarkSuite }) {
                       className={`w-4 h-4 transition-transform ${expanded ? "rotate-180" : ""}`}
                     />
                   </button>
+                  )}
                 </div>
               </div>
               <CardContent>
-                <ReportBarChart result={calculateAverageMetrics(testCase)} size="small" />
+                <ReportBarChart result={calculateAverageMetrics(testCase)} size="small" notSupported={suite.not_supported} />
                 {expanded && (
                   <div className="mt-4 border-t border-gray-200 pt-4">
                     <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
                       Details by resource type
                     </div>
-                    <ReportBarChart result={testCase} size="big" />
+                    <ReportBarChart result={testCase} size="big" notSupported={suite.not_supported} />
                   </div>
                 )}
               </CardContent>
