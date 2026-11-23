@@ -43,6 +43,7 @@ show_usage() {
     echo "  /k6/crud.js"
     echo "  /k6/search.js"
     echo "  /k6/import.js"
+    echo "  /k6/export.js"
 }
 
 # Function to bootstrap Docker Compose services with retry logic
@@ -52,7 +53,7 @@ bootstrap_services() {
 
     echo "Pulling docker images..."
     echo "================================================"
-    docker compose $COMPOSE_FILES pull aidbox hapi medplum microsoft mssql wso2 intersystems
+    docker compose $COMPOSE_FILES pull aidbox hapi medplum microsoft mssql wso2 intersystems rustfs azurite
 
     echo "Starting Docker Compose services  (max $max_attempts attempts)..."
     echo "================================================"
@@ -184,6 +185,38 @@ run_test_on_server() {
                 export BASE_URL=http://microsoft:8080"
             ;;
     esac
+
+    # Bulk export: where each server's output goes (see k6/export.js).
+    # Default is RustFS (S3); servers without an S3 client get another sink.
+    # Note: run_env goes through `sh -c`, so never put a literal $export in it.
+    if [ "$(basename "$test_path")" = "export.js" ]; then
+        case $server in
+            "hapi")
+                # No S3 support: output files are Binary resources in its DB.
+                run_env="${run_env}
+                    export EXPORT_STORAGE=server"
+                ;;
+            "wso2")
+                # Checked on 2.2.0: /$export is answered as a search, Patient/$export 404.
+                echo "Skipping: the WSO2 FHIR server does not implement \$export"
+                echo ""
+                return 0
+                ;;
+            "microsoft")
+                # Exports only to Azure Blob Storage: Azurite, into one container.
+                run_env="${run_env}
+                    export EXPORT_STORAGE=azure
+                    export EXPORT_PARAMS=_container=fhir-export"
+                ;;
+            "intersystems")
+                # The FHIR endpoint has no $export; IRIS needs a separate Bulk FHIR
+                # Coordinator endpoint, which only writes to local files.
+                echo "Skipping: IRIS for Health has no \$export on the FHIR endpoint (needs a Bulk FHIR Coordinator)"
+                echo ""
+                return 0
+                ;;
+        esac
+    fi
 
     # Gate on the target server only. k6's depends_on lists every server, so a
     # plain `compose run` would re-check all of them and abort this server's test

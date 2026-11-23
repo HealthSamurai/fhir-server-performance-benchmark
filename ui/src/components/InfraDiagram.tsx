@@ -63,7 +63,7 @@ interface DiagramEdge {
   to: string;
   fromSide?: Side;
   toSide?: Side;
-  color: "blue" | "green" | "red" | "orange";
+  color: "blue" | "green" | "red" | "orange" | "purple";
   dashed?: boolean;
   label?: string;
   curve?: number;
@@ -74,10 +74,11 @@ const COLOR_HEX: Record<DiagramEdge["color"], string> = {
   green: "#16a34a",
   red: "#dc2626",
   orange: "#ea580c",
+  purple: "#7c3aed",
 };
 
 const NODES: DiagramNode[] = [
-  { id: "k6",                x: 40,  y: 90,  w: 220, h: 64, title: "k6 runner",         subtitle: "prewarm · crud · search · import", bgColor: "#dbeafe", borderColor: "#3b82f6", textColor: "#1e3a8a", iconSlug: "k6" },
+  { id: "k6",                x: 40,  y: 90,  w: 220, h: 64, title: "k6 runner",         subtitle: "prewarm · crud · search · import · export", bgColor: "#dbeafe", borderColor: "#3b82f6", textColor: "#1e3a8a", iconSlug: "k6" },
   { id: "tgz",               x: 720, y: 90,  w: 220, h: 64, title: "tgz",               subtitle: "Synthea bundle host",              bgColor: "#fef3c7", borderColor: "#d97706", textColor: "#78350f", iconLetter: "T" },
   { id: "aidbox",            x: 40,  y: 200, w: 220, h: 78, title: "Aidbox",            subtitle: "JVM · :8080 · /metrics on :8379",  bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/aidbox.svg` },
   { id: "hapi",              x: 380, y: 200, w: 220, h: 78, title: "HAPI FHIR",         subtitle: "JVM · /actuator/prometheus",       bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/hapi.png` },
@@ -87,6 +88,8 @@ const NODES: DiagramNode[] = [
   { id: "intersystems",      x: 1740, y: 200, w: 220, h: 78, title: "IrisHealth",        subtitle: "IRIS · :52773 · embedded DB",      bgColor: "#fce7f3", borderColor: "#db2777", textColor: "#831843", iconUrl: `${ASSET_BASE}/images/intersystems.png` },
   { id: "postgres",          x: 280, y: 330, w: 280, h: 74, title: "PostgreSQL 18",     subtitle: "shared · DB-per-server",           bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconSlug: "postgresql" },
   { id: "redis",             x: 720, y: 330, w: 220, h: 74, title: "Redis",             subtitle: "Medplum sessions/cache",           bgColor: "#fee2e2", borderColor: "#dc2626", textColor: "#7f1d1d", iconSlug: "redis" },
+  { id: "rustfs",            x: 1400, y: 330, w: 220, h: 74, title: "RustFS",            subtitle: "S3 · bulk export sink (tmpfs)",    bgColor: "#ede9fe", borderColor: "#7c3aed", textColor: "#4c1d95", iconLetter: "S" },
+  { id: "azurite",           x: 1740, y: 330, w: 220, h: 74, title: "Azurite",           subtitle: "Azure Blob · MS FHIR export sink",  bgColor: "#ede9fe", borderColor: "#7c3aed", textColor: "#4c1d95", iconLetter: "A" },
   { id: "mssql",             x: 1060, y: 330, w: 220, h: 74, title: "SQL Server 2022",   subtitle: "dedicated · Microsoft only",       bgColor: "#dcfce7", borderColor: "#16a34a", textColor: "#14532d", iconUrl: `${ASSET_BASE}/images/mssql.svg` },
   { id: "cadvisor",          x: 40,  y: 500, w: 220, h: 64, title: "cAdvisor",          subtitle: "container CPU / mem / I/O",        bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "googlecloud" },
   { id: "prometheus",        x: 380, y: 500, w: 220, h: 64, title: "Prometheus",        subtitle: "scrape + remote-write",            bgColor: "#ffedd5", borderColor: "#f97316", textColor: "#7c2d12", iconSlug: "prometheus" },
@@ -110,6 +113,10 @@ const EDGES: DiagramEdge[] = [
   { from: "wso2",    to: "postgres",       color: "green" },
   { from: "microsoft", to: "mssql",        color: "green" },
   { from: "medplum", to: "redis",          color: "red" },
+  // Straight through the gap between the server row and the storage row.
+  { from: "aidbox",  to: "rustfs",         color: "purple", dashed: true, fromSide: "bottom", toSide: "top" },
+  { from: "medplum", to: "rustfs",         color: "purple", dashed: true, fromSide: "bottom", toSide: "top" },
+  { from: "microsoft", to: "azurite",      color: "purple", dashed: true, fromSide: "bottom", toSide: "top" },
   { from: "aidbox", to: "prometheus",      color: "orange", dashed: true, curve: 0.4 },
   { from: "hapi",   to: "prometheus",      color: "orange", dashed: true },
   { from: "intersystems", to: "prometheus", color: "orange", dashed: true, fromSide: "bottom", toSide: "right" },
@@ -322,6 +329,7 @@ export function InfraDiagram({ snippets }: Props) {
         <LegendItem color={COLOR_HEX.blue} label="FHIR HTTP" />
         <LegendItem color={COLOR_HEX.green} label="SQL" />
         <LegendItem color={COLOR_HEX.red} label="Cache" />
+        <LegendItem color={COLOR_HEX.purple} dashed label="Object storage ($export output)" />
         <LegendItem color={COLOR_HEX.orange} dashed label="Metrics scrape / remote-write" />
       </div>
       <p className="text-xs text-gray-500 mt-2 text-center">

@@ -91,11 +91,17 @@ function validateBenchmarkSuite(suite: any, index: number) {
     return validateTestCase(testCase, index, testIndex);
   });
 
+  // Optional, newer than most snapshots.
+  if ('not_supported' in suite && !(Array.isArray(suite.not_supported) && suite.not_supported.every((s: any) => typeof s === 'string'))) {
+    throw new Error(`Invalid suite at index ${index}: not_supported must be an array of server names`);
+  }
+
   return {
     name: suite.name,
     description: suite.description,
     result: validatedResult,
     test_cases: validatedTestCases,
+    ...(suite.not_supported ? { not_supported: suite.not_supported } : {}),
   };
 }
 

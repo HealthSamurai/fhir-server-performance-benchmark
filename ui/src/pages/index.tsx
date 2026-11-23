@@ -23,6 +23,7 @@ interface SuiteRow {
   label: string;
   unit: string; // "ms" | "rps" | ...
   lowerBetter: boolean;
+  notSupported: string[];
   values: { aidbox: number; medplum: number; hapi: number; microsoft: number; wso2: number; intersystems: number };
 }
 
@@ -54,6 +55,8 @@ function computeSummary(report: any): RunSummaryData {
     // Import is throughput of imported *resources*, not HTTP requests: result.data
     // holds requests/sec (~3.5), while the test case holds resources/sec (~2779).
     const isImport = String(suite?.name || "").toLowerCase().includes("import");
+    // Bulk export is data throughput: result.data holds MB/s per server.
+    const isExport = String(suite?.name || "").toLowerCase().includes("export");
 
     const total = isImport
       ? (suite?.test_cases?.[0]?.data?.[0] || {})
@@ -63,8 +66,9 @@ function computeSummary(report: any): RunSummaryData {
 
     return {
       label: shortSuiteLabel(suite?.name),
-      unit: isImport ? "res/s" : "rps",
+      unit: isImport ? "res/s" : isExport ? "MB/s" : "rps",
       lowerBetter: false,
+      notSupported: Array.isArray(suite?.not_supported) ? suite.not_supported : [],
       values: {
         aidbox: total.aidbox || 0,
         medplum: total.medplum || 0,
@@ -448,6 +452,13 @@ function RunSummary({ summary }: { summary: SummaryState | undefined }) {
               {SERVERS.map((s) => {
                 const v = row.values[s.key];
                 const isBest = best !== null && v === best && v > 0;
+                if (row.notSupported.includes(s.key)) {
+                  return (
+                    <td key={s.key} className="text-right px-2 py-0.5 w-24 text-gray-400 whitespace-nowrap">
+                      Not supported
+                    </td>
+                  );
+                }
                 return (
                   <td
                     key={s.key}

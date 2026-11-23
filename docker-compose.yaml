@@ -87,6 +87,11 @@ services:
       BOX_WEB_MAX_BODY: 209715200
       BOX_WEB_PORT: 8080
       BOX_FHIR_SEARCH_DEFAULT_PARAMS_TOTAL: none
+      # $export output goes to the RustFS bucket through the AwsAccount "rustfs"
+      # (S3 endpoint, path style, plain HTTP) created by the init bundle.
+      BOX_FHIR_BULK_STORAGE_PROVIDER: aws
+      BOX_FHIR_BULK_STORAGE_AWS_ACCOUNT: rustfs
+      BOX_FHIR_BULK_STORAGE_AWS_BUCKET: fhir-export
     healthcheck:
       test: curl -f http://localhost:8080/health
       interval: 30s
@@ -247,6 +252,17 @@ services:
         condition: service_healthy
     environment:
       OTLP_METRICS_ENDPOINT: http://otel-collector:4318/v1/metrics
+      # Binary storage (and so $export output) is the RustFS bucket
+      # (binaryStorage "s3:fhir-export" in config.json): a file: store would be
+      # per replica, and an export written by one replica's worker would be
+      # missing on the other seven. Medplum's config has no S3 endpoint setting;
+      # the AWS SDK reads it from the environment. Without forcePathStyle (not
+      # settable by env) the SDK addresses the bucket as fhir-export.rustfs —
+      # see the alias and RUSTFS_SERVER_DOMAINS on the rustfs service.
+      AWS_ENDPOINT_URL_S3: http://rustfs:9000
+      AWS_ACCESS_KEY_ID: rustfsadmin
+      AWS_SECRET_ACCESS_KEY: rustfsadmin
+      AWS_REGION: us-east-1
     volumes:
       - ./infra/medplum:/srv
     healthcheck:
@@ -375,6 +391,11 @@ services:
       SqlServer__AllowDatabaseCreation: "true"
       SqlServer__Initialize: "true"
       SqlServer__SchemaOptions__AutomaticUpdatesEnabled: "true"
+      # $export: MS FHIR writes only to Azure Blob Storage (no S3 client), so its
+      # output goes to Azurite, the Azure Storage emulator, with the emulator's
+      # well-known dev account — see the azurite service.
+      FhirServer__Operations__Export__Enabled: "true"
+      FhirServer__Operations__Export__StorageAccountConnection: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;"
     ports:
       - "13100:8080"
 
@@ -451,6 +472,99 @@ services:
     volumes:
       - tgzdata:/data
     working_dir: /data
+
+## ------------------------------------------------
+## RustFS — S3-compatible sink for the bulk export test (k6/export.js)
+## ------------------------------------------------
+## Data lives on a tmpfs, not on a volume: the export output (a few GB per
+## server — the Synthea dataset is ~4.8 GB of bundle JSON) never touches the
+## host disk, and the tmpfs also stops Docker from creating the anonymous
+## volume the image declares for /data. export.js deletes
+## each server's files after its run, so the tmpfs only ever holds one export.
+## tmpfs pages are charged to the container's memory cgroup, hence the memory
+## limit above the tmpfs size. Pinned: RustFS ships weekly, and the sink must
+## not change under the measurement.
+  rustfs:
+    container_name: perf-rustfs
+    image: rustfs/rustfs:1.0.6
+    pull_policy: always
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 20G
+    environment:
+      # Root credentials, used only by FHIR servers whose S3 client always signs
+      # requests (a signature with an unknown key is rejected even on a public
+      # bucket). Unsigned clients (k6) go through the bucket's anonymous policy.
+      RUSTFS_ACCESS_KEY: rustfsadmin
+      RUSTFS_SECRET_KEY: rustfsadmin
+      # Log to stdout instead of files under /logs in the writable layer.
+      RUSTFS_OBS_LOG_DIRECTORY: ""
+      # No background data scanner competing for CPU while an export is measured.
+      RUSTFS_SCANNER_ENABLED: "false"
+      # Virtual-host style (bucket.rustfs:9000) next to path style, for S3
+      # clients that can't be switched to path style (Medplum).
+      RUSTFS_SERVER_DOMAINS: rustfs:9000,rustfs
+    networks:
+      default:
+        aliases:
+          - fhir-export.rustfs
+    tmpfs:
+      - /data:size=16g,uid=10001,gid=10001,mode=0750
+    # Starts RustFS and creates the export bucket (fhir-export) with an
+    # anonymous policy; healthy only once the bucket is there.
+    entrypoint: ["/bin/sh", "/opt/perf/start.sh"]
+    volumes:
+      - ./infra/rustfs:/opt/perf:ro
+    healthcheck:
+      test: test -f /tmp/bucket-ready && curl -fsS http://localhost:9000/health/ready
+      interval: 5s
+      start_period: 5s
+      retries: 12
+    ports:
+      - "13130:9000"
+      - "13131:9001"
+
+## ------------------------------------------------
+## Azurite — Azure Blob sink for Microsoft FHIR's bulk export
+## ------------------------------------------------
+## MS FHIR can export only to Azure Blob Storage, so it gets the Azure Storage
+## emulator instead of RustFS. Same rules: blobs are kept in memory
+## (--inMemoryPersistence, capped by --extentMemoryLimit), nothing goes to the
+## host disk — the tmpfs on /data only stops Docker from creating the anonymous
+## volume the image declares — and export.js deletes the export container after
+## the run. Blob service only; MS FHIR needs no queues or tables for export.
+  azurite:
+    container_name: perf-azurite
+    image: mcr.microsoft.com/azure-storage/azurite:3.38.0
+    pull_policy: always
+    command:
+      - azurite-blob
+      - --blobHost
+      - 0.0.0.0
+      - --inMemoryPersistence
+      - --extentMemoryLimit
+      - "16384"
+      # The FHIR server's Azure SDK may speak a newer API version than Azurite.
+      - --skipApiVersionCheck
+      - --loose
+      - --disableTelemetry
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 20G
+    tmpfs:
+      - /data:size=1m
+    healthcheck:
+      # 127.0.0.1, not localhost: that resolves to ::1 and Azurite binds IPv4 only.
+      test: nc -z 127.0.0.1 10000
+      interval: 5s
+      start_period: 5s
+      retries: 12
+    ports:
+      - "13140:10000"
 
 ## ------------------------------------------------
 ## Monitoring stack

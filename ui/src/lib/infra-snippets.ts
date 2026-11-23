@@ -57,6 +57,11 @@ export function loadTestScenarios(): TestScenario[] {
       file: "k6/import.js",
       description: "Bulk ingest of a Synthea bundle",
     },
+    {
+      name: "export.js",
+      file: "k6/export.js",
+      description: "FHIR Bulk Data $export of the imported dataset to NDJSON (into RustFS over S3, Azurite for Microsoft FHIR), MB/s",
+    },
   ];
   return items.map((it) => ({
     ...it,
@@ -140,6 +145,24 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
         compose("tgz"),
         fileSnippet("infra/tgz/Dockerfile", "docker"),
       ],
+    },
+    rustfs: {
+      id: "rustfs",
+      title: "RustFS",
+      description:
+        "S3-compatible object store the bulk export test writes to (Aidbox natively, Medplum via its binary storage). Data lives on a tmpfs and is deleted after every server's export; k6 lists and cleans the bucket over plain HTTP through an anonymous bucket policy.",
+      snippets: [
+        compose("rustfs"),
+        fileSnippet("infra/rustfs/start.sh", "bash"),
+        fileSnippet("infra/rustfs/export-bucket-policy.json", "json"),
+      ],
+    },
+    azurite: {
+      id: "azurite",
+      title: "Azurite",
+      description:
+        "Azure Storage emulator (blob service only) — the bulk export sink for Microsoft FHIR, which can export only to Azure Blob Storage. Blobs are kept in memory; k6 lists and deletes the export container with an account SAS signed by the emulator's well-known dev key.",
+      snippets: [compose("azurite")],
     },
     aidbox: {
       id: "aidbox",
