@@ -203,6 +203,16 @@ async function searchP99(metricsUrl, runid, headers) {
   )
 }
 
+// Bulk export: one export per server, so k6 reports each figure once as a
+// gauge (k6/export.js); take that value, whenever it landed in the window.
+async function exportGauge(metricsUrl, runid, headers, metric) {
+  return await instantQuery(
+    metricsUrl,
+    `max by (fhirimpl) (max_over_time(k6_${metric}{runid="${runid}"}[24h]))`,
+    headers
+  )
+}
+
 async function getSnapshot(metricsUrl, runid, headers) {
   return {
     crud: {
@@ -216,6 +226,11 @@ async function getSnapshot(metricsUrl, runid, headers) {
     search: {
       summary: await searchTotalRPS(metricsUrl, runid, headers),
       test_cases: await searchP99(metricsUrl, runid, headers)
+    },
+    export: {
+      summary: await exportGauge(metricsUrl, runid, headers, 'export_mb_per_second'),
+      duration: await exportGauge(metricsUrl, runid, headers, 'export_duration_seconds'),
+      size: await exportGauge(metricsUrl, runid, headers, 'export_size_bytes')
     }
   }
 }

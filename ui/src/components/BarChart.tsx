@@ -26,20 +26,25 @@ const chartConfig = {
 // Order the server series best-first. Direction follows the metric: for latency
 // (ms/s) lower is better, otherwise (rps) higher is better. Bars with several
 // categories are ranked by their mean value across all of them, so the ordering
-// stays consistent for the whole chart.
-function orderedServerKeys(result: BenchmarkResult): string[] {
+// stays consistent for the whole chart. Servers without a value (unsupported or
+// failed: 0) go last, so a zero never ranks as the best latency.
+function orderedServerKeys(result: BenchmarkResult, notSupported: string[]): string[] {
     const keys = Object.keys(chartConfig)
     const lowerBetter = ["ms", "s"].includes(result.unit.toLowerCase())
     const score = (key: string) => {
         const data = result.data
-        if (!data.length) return 0
+        if (!data.length || notSupported.includes(key)) return 0
         return data.reduce((sum, dp: any) => sum + (dp[key] || 0), 0) / data.length
     }
-    return [...keys].sort((a, b) => (lowerBetter ? score(a) - score(b) : score(b) - score(a)))
+    return [...keys].sort((a, b) => {
+        const [sa, sb] = [score(a), score(b)]
+        if (sa <= 0 || sb <= 0) return sb - sa
+        return lowerBetter ? sa - sb : sb - sa
+    })
 }
 
-export function ReportBarChart({ result, size }: { result: BenchmarkResult, size: "small" | "big" }) {
-    const serverKeys = orderedServerKeys(result)
+export function ReportBarChart({ result, size, notSupported = [] }: { result: BenchmarkResult, size: "small" | "big", notSupported?: string[] }) {
+    const serverKeys = orderedServerKeys(result, notSupported)
 
     // For the detailed chart size to its content: the height of each category
     // group scales with the number of server bars in it (~20px per bar plus
@@ -88,14 +93,25 @@ export function ReportBarChart({ result, size }: { result: BenchmarkResult, size
                         radius={size === "small" ? 4 : 2}
                         barSize={size === "small" ? 24 : 15}
                     >
-                        <LabelList
-                            dataKey={key}
-                            formatter={(value: any) => `${value} ${result.unit}`}
-                            position="insideRight"
-                            fill="white"
-                            offset={10}
-                            fontSize={size === "small" ? 12 : 10}
-                        />
+                        {notSupported.includes(key) ? (
+                            // The bar has no length: put the note beside it.
+                            <LabelList
+                                dataKey={key}
+                                formatter={() => `${chartConfig[key as keyof typeof chartConfig].label}: Not supported`}
+                                position="right"
+                                fill="#6b7280"
+                                fontSize={size === "small" ? 12 : 10}
+                            />
+                        ) : (
+                            <LabelList
+                                dataKey={key}
+                                formatter={(value: any) => `${value} ${result.unit}`}
+                                position="insideRight"
+                                fill="white"
+                                offset={10}
+                                fontSize={size === "small" ? 12 : 10}
+                            />
+                        )}
                     </Bar>
                 ))}
 

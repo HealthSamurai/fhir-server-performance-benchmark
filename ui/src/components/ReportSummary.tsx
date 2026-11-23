@@ -57,12 +57,13 @@ function calculateServerStats(suites: BenchmarkSuite[]) {
       }
 
       // For metrics where lower is better (like response time), we want the minimum
-      const isLowerBetter = testCase.unit.toLowerCase() === 'ms'
+      const isLowerBetter = ['ms', 's'].includes(testCase.unit.toLowerCase())
       let bestServer: ServerName = 'aidbox'
       let bestValue = averages.aidbox
 
       Object.entries(averages).forEach(([server, value]) => {
-        if (isLowerBetter ? value < bestValue : value > bestValue) {
+        if (value <= 0) return
+        if (bestValue <= 0 || (isLowerBetter ? value < bestValue : value > bestValue)) {
           bestServer = server as ServerName
           bestValue = value
         }

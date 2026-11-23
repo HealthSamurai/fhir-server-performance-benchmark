@@ -147,6 +147,9 @@ steps:
     ## Same for InterSystems IRIS: SQL table statistics of the FHIR storage
   ## - docker exec perf-intersystems /opt/intersystems/gather-stats.sh
   - ./runner.sh -t /k6/search.js
+  ## Bulk export last: it reads the whole dataset, which would warm every
+  ## server's caches for the suites above.
+  - ./runner.sh -t /k6/export.js
 
   ## Record test end time (RUNID is the start time set in the configure step)
   - date -u +"%Y-%m-%dT%H:%M:%SZ" > /tmp/workspace/end-time

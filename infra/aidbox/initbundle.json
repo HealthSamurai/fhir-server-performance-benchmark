@@ -4,6 +4,22 @@
   "entry": [
     {
       "request": {
+        "method": "PUT",
+        "url": "/AwsAccount/rustfs"
+      },
+      "resource": {
+        "resourceType": "AwsAccount",
+        "id": "rustfs",
+        "region": "us-east-1",
+        "access-key-id": "rustfsadmin",
+        "secret-access-key": "rustfsadmin",
+        "host": "rustfs:9000",
+        "path-style": true,
+        "use-ssl": false
+      }
+    },
+    {
+      "request": {
         "method": "POST",
         "url": "/AccessPolicy",
         "ifNoneExist": "_id=perf"

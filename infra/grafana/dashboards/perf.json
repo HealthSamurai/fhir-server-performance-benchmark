@@ -492,6 +492,308 @@
         "x": 0,
         "y": 21
       },
+      "id": 49,
+      "panels": [],
+      "title": "Bulk export",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "NDJSON written to the export sink so far by the running $export (k6 lists the bucket/container every 10s)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "decbytes"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 22
+      },
+      "id": 50,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{fhirimpl}}",
+          "expr": "k6_export_progress_bytes{runid=~\"$runid\", fhirimpl=~\"$server\"}"
+        }
+      ],
+      "title": "Export progress",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "Network bytes received by the export sinks (cAdvisor): RustFS (S3) and Azurite (Microsoft FHIR) — live write rate of the export under test",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "showValues": false,
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 22
+      },
+      "id": 51,
+      "options": {
+        "annotations": {
+          "clustering": -1,
+          "multiLane": false
+        },
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "range": true,
+          "refId": "A",
+          "legendFormat": "{{name}}",
+          "expr": "sum by (name) (rate(container_network_receive_bytes_total{runid=~\"$runid\", commit=~\"$commit\", branch=~\"$branch\", name=~\"perf-rustfs|perf-azurite\"}[$__rate_interval]))"
+        }
+      ],
+      "title": "Export sink ingest",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": 0
+              }
+            ]
+          },
+          "unit": "MBs"
+        }
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "id": 52,
+      "options": {
+        "displayMode": "basic",
+        "legend": {
+          "calcs": [
+            "mean",
+            "median"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": false
+        },
+        "maxVizHeight": 300,
+        "minVizHeight": 0,
+        "minVizWidth": 0,
+        "namePlacement": "top",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "sizing": "auto",
+        "valueMode": "color"
+      },
+      "pluginVersion": "13.0.1",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "range": false,
+          "instant": true,
+          "refId": "A",
+          "legendFormat": "{{fhirimpl}}",
+          "expr": "max by (fhirimpl) (max_over_time(k6_export_mb_per_second{runid=~\"$runid\", fhirimpl=~\"$server\"}[24h]))"
+        }
+      ],
+      "title": "Export throughput",
+      "type": "bargauge",
+      "description": "NDJSON bytes divided by the time from the $export kick-off to the completed manifest (Higher is better)"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 38
+      },
       "id": 41,
       "panels": [],
       "title": "Resource utilization",
@@ -561,7 +863,7 @@
         "h": 12,
         "w": 12,
         "x": 0,
-        "y": 22
+        "y": 39
       },
       "id": 9,
       "options": {
@@ -678,7 +980,7 @@
         "h": 12,
         "w": 12,
         "x": 12,
-        "y": 22
+        "y": 39
       },
       "id": 11,
       "options": {
@@ -736,7 +1038,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 34
+        "y": 51
       },
       "id": 42,
       "panels": [],
@@ -810,7 +1112,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 35
+        "y": 52
       },
       "id": 28,
       "options": {
@@ -917,7 +1219,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 35
+        "y": 52
       },
       "id": 29,
       "options": {
@@ -964,7 +1266,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 44
+        "y": 61
       },
       "id": 43,
       "panels": [],
@@ -1038,7 +1340,7 @@
         "h": 10,
         "w": 11,
         "x": 0,
-        "y": 45
+        "y": 62
       },
       "id": 30,
       "options": {
@@ -1108,7 +1410,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 55
+        "y": 72
       },
       "id": 4,
       "options": {
@@ -1179,7 +1481,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 65
+        "y": 82
       },
       "id": 44,
       "panels": [],
@@ -1250,7 +1552,7 @@
         "h": 10,
         "w": 13,
         "x": 0,
-        "y": 66
+        "y": 83
       },
       "id": 32,
       "options": {
@@ -1355,7 +1657,7 @@
         "h": 10,
         "w": 11,
         "x": 13,
-        "y": 66
+        "y": 83
       },
       "id": 33,
       "options": {
@@ -1415,7 +1717,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 76
+        "y": 93
       },
       "id": 45,
       "panels": [],
@@ -1488,7 +1790,7 @@
         "h": 9,
         "w": 17,
         "x": 0,
-        "y": 77
+        "y": 94
       },
       "id": 34,
       "options": {
@@ -1610,7 +1912,7 @@
         "h": 9,
         "w": 7,
         "x": 17,
-        "y": 77
+        "y": 94
       },
       "id": 35,
       "options": {
@@ -1657,7 +1959,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 86
+        "y": 103
       },
       "id": 46,
       "panels": [],
@@ -1728,7 +2030,7 @@
         "h": 10,
         "w": 13,
         "x": 0,
-        "y": 87
+        "y": 104
       },
       "id": 47,
       "options": {
@@ -1833,7 +2135,7 @@
         "h": 10,
         "w": 11,
         "x": 13,
-        "y": 87
+        "y": 104
       },
       "id": 48,
       "options": {

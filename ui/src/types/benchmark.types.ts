@@ -27,6 +27,8 @@ export interface BenchmarkSuite {
   description: string;
   result: BenchmarkResult;
   test_cases: TestCase[];
+  /** Servers that can't run this suite at all: shown as "Not supported", not as 0. */
+  not_supported?: string[];
 }
 
 export interface BenchmarkReport {
@@ -40,7 +42,7 @@ export interface BenchmarkReport {
 
 // Specific types for common result types
 export type ResultType = 'Requests per second' | 'P99' | 'P95' | 'P50' | 'Average';
-export type UnitType = 'rps' | 'ms' | 's' | 'count' | 'RPS' | 'MS';
+export type UnitType = 'rps' | 'ms' | 's' | 'count' | 'RPS' | 'MS' | 'MB/s' | 'MB';
 
 // Enhanced result interface with specific types
 export interface TypedBenchmarkResult {
