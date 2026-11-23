@@ -153,7 +153,7 @@ export function loadInfraSnippets(): Record<string, NodeInfo> {
         "S3-compatible object store the bulk export test writes to (Aidbox natively, Medplum via its binary storage). Data lives on a tmpfs and is deleted after every server's export; k6 lists and cleans the bucket over plain HTTP through an anonymous bucket policy.",
       snippets: [
         compose("rustfs"),
-        compose("rustfs-init"),
+        fileSnippet("infra/rustfs/start.sh", "bash"),
         fileSnippet("infra/rustfs/export-bucket-policy.json", "json"),
       ],
     },
